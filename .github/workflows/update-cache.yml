@@ -23,8 +23,8 @@ jobs:
         run: |
           mkdir -p scripts
           cat > scripts/fetch-cache.js <<'EOF'
-          const https = require('https');
-          const fs = require('fs');
+          import https from 'https';
+          import fs from 'fs';
 
           const token = process.env.PAT;
           const repo = process.env.REPO || 'Sami9889/whyismycomputeronfuckingfire';
