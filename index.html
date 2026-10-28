@@ -301,22 +301,6 @@
 
                 <hr>
 
-                <div style="text-align: center; background-color: #000022; border: 2px inset #00FFFF; padding: 10px;">
-                    <p style="color: #00FFFF; margin: 0; font-size: 12px; font-weight: bold;">
-                        🔊 HARDWARE SOUND VERIFICATION SYSTEM v1.0
-                    </p>
-                    <br>
-                    <button id="sfx-btn" onclick="toggleFan()" style="padding: 8px 15px; font-weight: bold; cursor: pointer; background-color: #333333; color: #00FF00; border: 3px outset #777;">
-                        🔊 PLAY JET ENGINE FAN NOISE (SFX)
-                    </button>
-                    &nbsp;
-                    <button onclick="playBeep()" style="padding: 8px 15px; font-weight: bold; cursor: pointer; background-color: #333333; color: #FFFF00; border: 3px outset #777;">
-                        🚨 TEST BIOS OVERHEAT BEEP
-                    </button>
-                </div>
-
-                <hr>
-
                 <fieldset style="border: 3px groove #FF00FF; padding: 12px; background-color: #110011;">
                     <legend style="color: #FF00FF; font-weight: bold; font-family: Arial;">[ 🚨 SUBMIT YOUR THERMAL INCIDENT / CHALLENGE ENTRY ]</legend>
 
@@ -425,24 +409,6 @@
 
         var sampleIncidents = [];
 
-        function renderIncidents() {
-            var feed = document.getElementById('incident-feed');
-            if (!feed) return;
-
-            var stored = localStorage.getItem('aussie_thermal_incidents');
-            var list = stored ? JSON.parse(stored) : sampleIncidents;
-
-            var html = "";
-            for (var i = 0; i < list.length; i++) {
-                html += '<div style="border-bottom: 1px solid #333; padding: 4px 0;">' +
-                        '<b style="color: #00FFFF;">' + escapeHtml(list[i].name) + '</b> ' +
-                        '(<span style="color: #FF0000;">' + escapeHtml(list[i].temp) + '</span>): ' +
-                        '<span style="color: #FFFF00;">' + escapeHtml(list[i].method) + '</span>' +
-                        '</div>';
-            }
-            feed.innerHTML = html;
-        }
-
         function escapeHtml(text) {
             return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
@@ -452,24 +418,76 @@
             var name = document.getElementById('inc-name').value.trim();
             var temp = document.getElementById('inc-temp').value;
             var method = document.getElementById('inc-method').value.trim();
+            var success = document.getElementById('inc-success');
 
             if (!name || !method) return;
 
-            var stored = localStorage.getItem('aussie_thermal_incidents');
-            var list = stored ? JSON.parse(stored) : [];
+            success.innerText = "Submitting to GitHub...";
 
-            list.unshift({ name: name, temp: temp, method: method });
-            localStorage.setItem('aussie_thermal_incidents', JSON.stringify(list));
+            var issue = {
+                title: "THERMAL INCIDENT: " + name + " (" + temp + ")",
+                body: "**Handle:** " + escapeHtml(name) + "\n\n**Temperature:** " + escapeHtml(temp) + "\n\n**Emergency Method:** " + escapeHtml(method) + "\n\nSubmitted via whyismycomputeronfuckingfire.com.au",
+                labels: ["thermal-incident"]
+            };
 
-            renderIncidents();
+            fetch('https://api.github.com/repos/Sami9889/whyismycomputeronfuckingfire/issues', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github+json',
+                    'User-Agent': 'why-is-my-computer-on-fire'
+                },
+                body: JSON.stringify(issue)
+            })
+            .then(function(r) {
+                if (r.ok) {
+                    success.innerText = "🔥 INCIDENT REGISTERED ON GITHUB! THANKS " + name.toUpperCase() + "! 🔥";
+                    document.getElementById('inc-name').value = "";
+                    document.getElementById('inc-method').value = "";
+                    loadIncidentsFromGitHub();
+                } else {
+                    r.text().then(function(t) { success.innerText = "GitHub error: " + t; });
+                }
+            })
+            .catch(function(err) {
+                success.innerText = "Could not reach GitHub: " + err.message;
+            });
+        }
 
-            document.getElementById('inc-success').innerText = "🔥 INCIDENT REGISTERED ON THE CHALLENGE WALL! THANKS " + name.toUpperCase() + "! 🔥";
-            document.getElementById('inc-name').value = "";
-            document.getElementById('inc-method').value = "";
+        function loadIncidentsFromGitHub() {
+            var feed = document.getElementById('incident-feed');
+            if (!feed) return;
+            feed.innerHTML = '<div style="color:#FFFF00;">Loading challenge wall from GitHub...</div>';
+            fetch('https://api.github.com/repos/Sami9889/whyismycomputeronfuckingfire/issues?labels=thermal-incident&state=all&per_page=20', {
+                headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'why-is-my-computer-on-fire' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(list) {
+                var html = "";
+                for (var i = 0; i < list.length; i++) {
+                    var it = list[i];
+                    var body = it.body || "";
+                    var nameM = body.match(/\*\*Handle:\*\* ([^\n]+)/);
+                    var tempM = body.match(/\*\*Temperature:\*\* ([^\n]+)/);
+                    var methodM = body.match(/\*\*Emergency Method:\*\* ([^\n]+)/);
+                    var nm = nameM ? nameM[1] : it.title;
+                    var tm = tempM ? tempM[1] : "?";
+                    var mm = methodM ? methodM[1] : body;
+                    html += '<div style="border-bottom: 1px solid #333; padding: 4px 0;">' +
+                            '<b style="color: #00FFFF;">' + escapeHtml(nm.trim()) + '</b> ' +
+                            '(<span style="color: #FF0000;">' + escapeHtml(tm.trim()) + '</span>): ' +
+                            '<span style="color: #FFFF00;">' + escapeHtml(mm.trim()) + '</span>' +
+                            '</div>';
+                }
+                feed.innerHTML = html || '<div style="color:#AAAAAA;">No incidents yet. Submit one!</div>';
+            })
+            .catch(function() {
+                feed.innerHTML = '<div style="color:#FF0000;">Could not load challenge wall from GitHub.</div>';
+            });
         }
 
         window.addEventListener('DOMContentLoaded', function() {
-            renderIncidents();
+            loadIncidentsFromGitHub();
             loadConfig();
         });
 
@@ -493,60 +511,6 @@
                 if (m) out[m[1].trim()] = m[2].trim();
             });
             return out;
-        }
-
-        var audioCtx, osc, gain;
-        var isPlaying = false;
-
-        function toggleFan() {
-            var btn = document.getElementById('sfx-btn');
-            if (!isPlaying) {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                osc = audioCtx.createOscillator();
-                gain = audioCtx.createGain();
-
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(120, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-
-                isPlaying = true;
-                btn.innerText = "🔇 STOP JET ENGINE NOISE";
-                btn.style.backgroundColor = "#FF0000";
-                btn.style.color = "#FFFFFF";
-            } else {
-                if (osc) {
-                    osc.stop();
-                    osc.disconnect();
-                }
-                isPlaying = false;
-                btn.innerText = "🔊 PLAY JET ENGINE FAN NOISE (SFX)";
-                btn.style.backgroundColor = "#333333";
-                btn.style.color = "#00FF00";
-            }
-        }
-
-        function playBeep() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            var beepOsc = audioCtx.createOscillator();
-            var beepGain = audioCtx.createGain();
-
-            beepOsc.type = 'square';
-            beepOsc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            beepGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-
-            beepOsc.connect(beepGain);
-            beepGain.connect(audioCtx.destination);
-
-            beepOsc.start();
-            beepOsc.stop(audioCtx.currentTime + 0.3);
         }
 
         (function updateHitCounter() {
