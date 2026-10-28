@@ -1,4 +1,7 @@
+# summit.yaml - optional config for Server.js
 name: why-is-my-computer-on-fucking-fire
 description: Australia's unofficial PC cooling emergency page
-sponsor_url: https://github.com/Sami9889
+sponsor_url: https://github.com/sponsors/Sami9889
 fund_goal_aud: 500
+# github_token: YOUR_GITHUB_TOKEN   # fine-grained token, this repo only, Issues: read+write
+#                                   # (prefer the GITHUB_TOKEN env var instead of committing a token here)
