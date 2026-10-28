@@ -243,6 +243,10 @@
                                     💰 SPONSOR THIS PROJECT TO STOP THE FIRE! 💰
                                 </a>
                                 <br>
+                                <span id="fund-text" style="font-size: 10px; color: #AAAAAA; font-family: Arial; display: inline-block; margin-top: 6px;">
+                                    Sponsor this project to fund real cooling hardware.
+                                </span>
+                                <br>
                             </td>
                         </tr>
                     </table>
@@ -466,11 +470,30 @@
 
         window.addEventListener('DOMContentLoaded', function() {
             renderIncidents();
-            var sponsorLink = document.getElementById('sponsor-link');
-            if (sponsorLink) {
-                sponsorLink.href = 'https://github.com/sponsors';
-            }
+            loadConfig();
         });
+
+        function loadConfig() {
+            fetch('summit.yaml')
+                .then(function(r) { return r.text(); })
+                .then(function(text) {
+                    var cfg = parseYaml(text);
+                    var link = document.getElementById('sponsor-link');
+                    var target = document.getElementById('fund-target');
+                    if (link && cfg.sponsor_url) link.href = cfg.sponsor_url;
+                    if (target && cfg.fund_goal_aud) target.textContent = cfg.fund_goal_aud;
+                })
+                .catch(function() {});
+        }
+
+        function parseYaml(text) {
+            var out = {};
+            text.split(/\r?\n/).forEach(function(line) {
+                var m = line.match(/^([^:]+):\s*(.*)$/);
+                if (m) out[m[1].trim()] = m[2].trim();
+            });
+            return out;
+        }
 
         var audioCtx, osc, gain;
         var isPlaying = false;
