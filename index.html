@@ -216,10 +216,11 @@ Last updated: October 2026.<br>
 </center>
 
 <script type="text/javascript">
-// Leave blank if server.js is serving this page.
-// If the page lives somewhere else (GitHub Pages etc), put the server's address here,
-// e.g. 'https://your-app.onrender.com'
-var API = '';
+var REPO = 'Sami9889/whyismycomputeronfuckingfire';
+
+function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 function showResult(type) {
     var res = document.getElementById('result');
@@ -244,51 +245,50 @@ function showResult(type) {
     res.style.display = 'block';
 }
 
-function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// Anti-bot sum: find a number that makes SHA-256(token:number) start with `bits` zero bits.
-function solveChallenge(token, bits, done) {
-    var enc = new TextEncoder();
-    var n = 0;
-    function ok(h) {
-        var b = bits, i = 0;
-        while (b >= 8) { if (h[i] !== 0) return false; i++; b -= 8; }
-        return b === 0 || (h[i] >> (8 - b)) === 0;
-    }
-    function step() {
-        var jobs = [];
-        for (var k = 0; k < 500; k++) {
-            jobs.push(crypto.subtle.digest('SHA-256', enc.encode(token + ':' + (n + k).toString(36))));
-        }
-        Promise.all(jobs).then(function(hashes) {
-            for (var k = 0; k < hashes.length; k++) {
-                if (ok(new Uint8Array(hashes[k]))) { done((n + k).toString(36)); return; }
-            }
-            n += 500;
-            setTimeout(step, 0);
+function loadConfig() {
+    fetch('summit.yaml')
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+        var cfg = {};
+        text.split(/\r?\n/).forEach(function(line) {
+            var m = line.match(/^([^:]+):\s*(.*)$/);
+            if (m) cfg[m[1].trim()] = m[2].trim();
         });
-    }
-    step();
+        if (cfg.sponsor_url) document.getElementById('sponsor-link').href = cfg.sponsor_url;
+        if (cfg.fund_goal_aud) document.getElementById('fund-target').textContent = cfg.fund_goal_aud;
+        document.getElementById('fund-now').textContent = '0';
+        document.getElementById('fund-bar').setAttribute('width', '2%');
+    })
+    .catch(function() {});
 }
 
-function getProof() {
-    return new Promise(function(resolve, reject) {
-        function fail(m) { var e = new Error(m); e.userMessage = m; reject(e); }
-        if (!window.crypto || !crypto.subtle) { fail('Your browser cannot do the anti-bot check (it needs https).'); return; }
-        fetch(API + '/api/challenge')
-        .then(function(r) { return r.json(); })
-        .then(function(c) {
-            if (!c || !c.token) { fail('Could not get an anti-bot token.'); return; }
-            var got = new Date().getTime();
-            solveChallenge(c.token, c.bits, function(solution) {
-                var wait = Math.max(0, (c.min_wait_ms || 0) - (new Date().getTime() - got));
-                setTimeout(function() { resolve({ token: c.token, solution: solution }); }, wait + 200);
-            });
-        })
-        .catch(function() { fail('Could not reach the server.'); });
-    });
+function loadIncidents() {
+    var feed = document.getElementById('incident-feed');
+    feed.innerHTML = 'Loading entries...';
+    fetch('https://api.github.com/repos/' + REPO + '/issues?labels=thermal-incident&state=open&per_page=20', {
+        headers: { 'Accept': 'application/vnd.github+json', 'User-Agent': 'why-is-my-computer-on-fire' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+        var html = '';
+        if (!list || !list.length) { feed.innerHTML = 'No entries yet. Be the first!'; return; }
+        for (var i = 0; i < list.length; i++) {
+            var it = list[i];
+            var b = it.body || '';
+            var n = b.match(/\*\*Handle:\*\* ([^\n]+)/);
+            var t = b.match(/\*\*Temperature:\*\* ([^\n]+)/);
+            var m = b.match(/\*\*Emergency Method:\*\* ([^\n]+)/);
+            var nm = n ? n[1] : it.title;
+            var tm = t ? t[1] : '?';
+            var mm = m ? m[1] : b;
+            html += '<div style="border-bottom:1px dotted #333333; padding:3px 0;">' +
+                    '<font color="#00CCCC"><b>' + esc(nm.trim()) + '</b></font> ' +
+                    '(<font color="#FF3300">' + esc(tm.trim()) + '</font>): ' +
+                    '<font color="#FFFF00">' + esc(mm.trim()) + '</font></div>';
+        }
+        feed.innerHTML = html;
+    })
+    .catch(function() { feed.innerHTML = '<font color="#FF3300">Could not load the guestbook.</font>'; });
 }
 
 function submitIncident() {
@@ -300,66 +300,21 @@ function submitIncident() {
         msg.innerHTML = '<font color="#FF3300">Please fill in your name and what you tried.</font>';
         return false;
     }
-    msg.innerHTML = '<font color="#FFFF00">Checking you are not a robot, give it a few seconds...</font>';
-    getProof()
-    .then(function(proof) {
-        return fetch(API + '/api/incidents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name, temp: temp, method: method, challenge: proof.token, solution: proof.solution })
-        });
-    })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
-    .then(function(x) {
-        if (x.ok) {
-            msg.innerHTML = '<font color="#33FF33">Thanks ' + esc(name) + '! You are in the guestbook.</font>';
-            document.getElementById('inc-name').value = '';
-            document.getElementById('inc-method').value = '';
-            loadIncidents();
-        } else {
-            msg.innerHTML = '<font color="#FF3300">' + esc((x.d && x.d.error) || 'Something went wrong.') + '</font>';
-        }
-    })
-    .catch(function(e) {
-        msg.innerHTML = '<font color="#FF3300">' + esc(e && e.userMessage ? e.userMessage : 'Could not reach the server.') + '</font>';
-    });
+    msg.innerHTML = '<font color="#FFFF00">Opening GitHub to submit...</font>';
+    var title = encodeURIComponent('THERMAL INCIDENT: ' + name + ' (' + temp + ')');
+    var body = encodeURIComponent(
+        '**Handle:** ' + name + '\n\n' +
+        '**Temperature:** ' + temp + '\n\n' +
+        '**Emergency Method:** ' + method + '\n\n' +
+        'Submitted via whyismycomputeronfuckingfire.com.au'
+    );
+    var url = 'https://github.com/' + REPO + '/issues/new?title=' + title + '&body=' + body + '&labels=thermal-incident';
+    window.open(url, '_blank');
+    msg.innerHTML = '<font color="#33FF33">Thanks ' + esc(name) + '! Issue opened on GitHub.</font>';
+    document.getElementById('inc-name').value = '';
+    document.getElementById('inc-method').value = '';
+    setTimeout(loadIncidents, 2000);
     return false;
-}
-
-function loadIncidents() {
-    var feed = document.getElementById('incident-feed');
-    feed.innerHTML = 'Loading entries...';
-    fetch(API + '/api/incidents')
-    .then(function(r) { return r.json(); })
-    .then(function(list) {
-        var html = '';
-        if (!list || !list.length) { feed.innerHTML = 'No entries yet. Be the first!'; return; }
-        for (var i = 0; i < list.length; i++) {
-            html += '<div style="border-bottom:1px dotted #333333; padding:3px 0;">' +
-                    '<font color="#00CCCC"><b>' + esc(list[i].name) + '</b></font> ' +
-                    '(<font color="#FF3300">' + esc(list[i].temp) + '</font>): ' +
-                    '<font color="#FFFF00">' + esc(list[i].method) + '</font></div>';
-        }
-        feed.innerHTML = html;
-    })
-    .catch(function() { feed.innerHTML = '<font color="#FF3300">Could not load the guestbook.</font>'; });
-}
-
-function loadFund() {
-    fetch(API + '/api/fund')
-    .then(function(r) { return r.json(); })
-    .then(function(f) {
-        if (!f || f.goal_aud == null) return;
-        document.getElementById('fund-now').innerHTML = esc(Math.round(f.raised_aud));
-        document.getElementById('fund-target').innerHTML = esc(f.goal_aud);
-        var pct = Math.max(2, Math.min(100, f.percent || 0));
-        document.getElementById('fund-bar').setAttribute('width', pct + '%');
-        if (f.sponsor_url) document.getElementById('sponsor-link').href = f.sponsor_url;
-        if (f.supporters) {
-            document.getElementById('fund-supporters').innerHTML = esc(f.supporters) + (f.supporters == 1 ? ' supporter' : ' supporters') + ' so far. Legends.';
-        }
-    })
-    .catch(function() {});
 }
 
 function setCounter(n) {
@@ -371,15 +326,18 @@ function setCounter(n) {
 }
 
 function loadCounter() {
-    fetch(API + '/api/hit')
+    fetch('https://api.countapi.xyz/hit/' + REPO, { headers: { 'Accept': 'application/json' } })
     .then(function(r) { return r.json(); })
-    .then(function(d) { if (d && d.value != null) setCounter(d.value); })
+    .then(function(d) {
+        var n = d && d.value != null ? d.value : 0;
+        setCounter(n);
+    })
     .catch(function() {});
 }
 
 window.onload = function() {
     loadIncidents();
-    loadFund();
+    loadConfig();
     loadCounter();
 };
 </script>
