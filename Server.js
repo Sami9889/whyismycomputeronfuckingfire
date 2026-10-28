@@ -41,11 +41,29 @@ const path = require('path');
 const PORT = Number(process.env.PORT) || 3000;
 const REPO = process.env.GITHUB_REPO || 'Sami9889/whyismycomputeronfuckingfire';
 const SPONSOR_LOGIN = process.env.SPONSOR_LOGIN || REPO.split('/')[0];
-const TOKEN = process.env.GITHUB_TOKEN || '';
-const SPONSORS_TOKEN = process.env.SPONSORS_TOKEN || TOKEN;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
 const TRUST_PROXY = !!process.env.TRUST_PROXY;
 const FALLBACK_FX = Number(process.env.USD_TO_AUD) || 1.5;
+
+// Optional summit.yaml next to this file:
+//   fund_goal_aud: 500
+//   sponsor_url: https://github.com/sponsors/Sami9889
+//   raised_aud: 0          # only used if GitHub Sponsors can't be read
+//   github_token: YOUR_TOKEN   # fine-grained token, this repo only, Issues: read+write
+//                              # falls back to the GITHUB_TOKEN env var if set
+function readConfigFile() {
+  const out = {};
+  try {
+    fs.readFileSync(path.join(__dirname, 'summit.yaml'), 'utf8').split(/\r?\n/).forEach(function (line) {
+      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
+      if (m && m[1].charAt(0) !== '#') out[m[1]] = m[2].replace(/^["']|["']$/g, '').replace(/\s+#.*$/, '');
+    });
+  } catch (e) { /* file is optional */ }
+  return out;
+}
+const CFG = readConfigFile();
+const TOKEN = process.env.GITHUB_TOKEN || CFG.github_token || '';
+const SPONSORS_TOKEN = process.env.SPONSORS_TOKEN || TOKEN;
 
 const API = 'https://api.github.com/repos/' + REPO;
 const INCIDENT_LABEL = 'thermal-incident';
@@ -146,16 +164,6 @@ async function graphql(query, variables) {
   return json.data;
 }
 
-function readConfigFile() {
-  const out = {};
-  try {
-    fs.readFileSync(path.join(__dirname, 'summit.yaml'), 'utf8').split(/\r?\n/).forEach(function (line) {
-      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
-      if (m && m[1].charAt(0) !== '#') out[m[1]] = m[2].replace(/^["']|["']$/g, '').replace(/\s+#.*$/, '');
-    });
-  } catch (e) { /* file is optional */ }
-  return out;
-}
 
 // ---------- abuse protection ----------
 
