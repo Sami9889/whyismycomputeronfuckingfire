@@ -233,13 +233,13 @@
                                 </p>
 
                                 <div style="font-size: 12px; text-align: left; color: #00FFFF; font-family: Courier New, monospace; font-weight: bold; margin-bottom: 4px;">
-                                    SERVER COOLING FUND GOAL: <b id="fund-goal">$0 / $500 AUD</b>
+                                    SERVER COOLING FUND GOAL: <b id="fund-goal">$0 / <span id="fund-target">500</span> AUD</b>
                                 </div>
                                 <div class="progress-bar-container">
                                     <div class="progress-bar-fill" id="fund-bar"></div>
                                 </div>
 
-                                <a href="https://github.com/sponsors" target="_blank" class="sponsor-btn">
+                                <a id="sponsor-link" href="" target="_blank" class="sponsor-btn">
                                     💰 DONATE ON GITHUB SPONSORS TO STOP THE FIRE! 💰
                                 </a>
                                 <br>
@@ -469,6 +469,10 @@
 
         window.addEventListener('DOMContentLoaded', function() {
             renderIncidents();
+            var sponsorLink = document.getElementById('sponsor-link');
+            if (sponsorLink) {
+                sponsorLink.href = 'https://github.com/sponsors';
+            }
         });
 
         var audioCtx, osc, gain;
