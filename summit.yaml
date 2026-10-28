@@ -1,7 +1,0 @@
-name: why-is-my-computer-on-fucking-fire
-description: Australia's unofficial computer cooling emergency hotline
-url: https://whyismycomputeronfuckingfire.com.au
-sponsor_url: https://github.com/sponsors/Sami9889
-fund_goal_aud: 500
-counter_storage_key: aussie_fire_hit_count
-incidents_storage_key: aussie_thermal_incidents
