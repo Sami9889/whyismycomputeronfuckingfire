@@ -1,0 +1,8 @@
+# Security contact for whyismycomputeronfuckingfire.com.au (RFC 9116)
+Contact: mailto:hello@sami-s.dev
+Contact: https://github.com/Sami9889/whyismycomputeronfuckingfire/security/advisories/new
+Contact: https://sami-s.dev
+Expires: 2027-10-28T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://whyismycomputeronfuckingfire.com.au/.well-known/security.txt
+Policy: https://github.com/Sami9889/whyismycomputeronfuckingfire/blob/main/SECURITY.md
