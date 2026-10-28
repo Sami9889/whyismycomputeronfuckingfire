@@ -486,12 +486,27 @@
             });
         }
 
+        function loadCounter() {
+            var counterElem = document.getElementById('hit-counter');
+            if (!counterElem) return;
+            fetch('https://api.countapi.xyz/hit/Sami9889/whyismycomputeronfuckingfire', {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var n = data && data.value != null ? data.value : 0;
+                counterElem.innerText = String(n).padStart(6, '0');
+            })
+            .catch(function() {
+                counterElem.innerText = '000000';
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', function() {
             loadIncidentsFromGitHub();
             loadConfig();
+            loadCounter();
         });
-
-        function loadConfig() {
             fetch('summit.yaml')
                 .then(function(r) { return r.text(); })
                 .then(function(text) {
@@ -513,24 +528,6 @@
             return out;
         }
 
-        (function updateHitCounter() {
-            var STORAGE_KEY = 'aussie_fire_hit_count';
-            var currentHits = localStorage.getItem(STORAGE_KEY);
-
-            if (!currentHits) {
-                currentHits = 0;
-            } else {
-                currentHits = parseInt(currentHits, 10);
-            }
-
-            currentHits += 1;
-            localStorage.setItem(STORAGE_KEY, currentHits);
-
-            var counterElem = document.getElementById('hit-counter');
-            if (counterElem) {
-                counterElem.innerText = String(currentHits).padStart(6, '0');
-            }
-        })();
     </script>
 
 </body>
