@@ -1,9 +1,9 @@
 # Render blueprint: web service + keep-alive cron
 # Web service runs server.js (serves page + API)
-# Cron service pings /api/health every 13 min to prevent Render free-tier sleep
+# Cron service pings /api/health every 1 min to prevent Render free-tier sleep
 #
 # Free plan note: Render web services still sleep after ~15 min without traffic.
-# The cron below pings the health endpoint to keep it warm, but it may still sleep
+# The cron below pings the health endpoint every 1 min to keep it warm, but it may still sleep
 # during long quiet periods. First visit after sleep takes ~1 min to wake up.
 services:
   - type: web
@@ -25,10 +25,10 @@ services:
 
   - type: cron
     name: fire-keepalive
-    schedule: "*/13 * * * *"
+    schedule: "*/1 * * * *"
     runtime: node
     buildCommand: echo "nothing to build"
-    startCommand: node -e "const http=require('http');setInterval(()=>{http.get('https://fire-guestbook.onrender.com/api/health',()=>{})},0);process.stdin.resume();"
+    startCommand: node -e "const http=require('http');http.get('https://fire-guestbook.onrender.com/api/health',()=>{})"
     envVars:
       - key: NODE_VERSION
         value: "20"
