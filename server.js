@@ -23,6 +23,7 @@ const FALLBACK_FX = Number(process.env.USD_TO_AUD) || 1.5;
 const API = GITHUB_URL + '/repos/' + REPO;
 const INCIDENT_LABEL = 'thermal-incident';
 const COUNTER_LABEL = 'counter';
+const FUND_LABEL = 'fund';
 const TEMPS = ['95C', '120C', '500C', '9000C'];
 
 const HTTP_TIMEOUT = 8000;
@@ -402,6 +403,7 @@ let count = 0;
 let counterIssue = null;
 let dirty = false;
 let manualRaisedAud = null;
+let fundIssue = null;
 
 let githubState = TOKEN ? 'unchecked' : 'no token';
 
@@ -459,6 +461,29 @@ async function saveCounter() {
   } catch (e) {
     dirty = true;
     log('Could not save counter:', e.message);
+  }
+}
+
+async function initFundIssue() {
+  if (!TOKEN) return;
+  const found = await gh('GET', '/issues?labels=' + FUND_LABEL + '&state=open&per_page=1');
+  if (found.length) {
+    fundIssue = found[0].number;
+    const val = parseFloat(found[0].body);
+    if (!isNaN(val)) manualRaisedAud = val;
+  } else {
+    const made = await gh('POST', '/issues', { title: 'Manual fund override (do not edit)', body: '0', labels: [FUND_LABEL] });
+    fundIssue = made.number;
+  }
+  log('Fund manual override at', manualRaisedAud, '(issue #' + fundIssue + ')');
+}
+
+async function saveFundIssue() {
+  if (!TOKEN || !fundIssue) return;
+  try {
+    await gh('PATCH', '/issues/' + fundIssue, { body: String(manualRaisedAud != null ? manualRaisedAud : 0) });
+  } catch (e) {
+    log('Could not save fund issue:', e.message);
   }
 }
 
@@ -629,6 +654,7 @@ const server = http.createServer(async function (req, res) {
         return send(res, 400, { error: 'Bad request.' });
       }
       manualRaisedAud = val;
+      await saveFundIssue();
       return send(res, 200, await fundStatus(), { 'Cache-Control': 'no-store' });
     }
 
@@ -669,7 +695,7 @@ const server = http.createServer(async function (req, res) {
 server.requestTimeout = 15e3;
 server.headersTimeout = 10e3;
 
-checkToken().then(initCounter).catch(function (e) { log('Counter init failed:', e.message); });
+checkToken().then(initCounter).then(initFundIssue).catch(function (e) { log('Counter init failed:', e.message); });
 
 server.listen(PORT, function () {
   log('Listening on port ' + PORT + ' | repo ' + REPO + ' | sponsors for ' + SPONSOR_LOGIN);
