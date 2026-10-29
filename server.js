@@ -374,6 +374,13 @@ async function fundStatus() {
     sponsor_url: cfg.sponsor_url || 'https://github.com/sponsors/' + SPONSOR_LOGIN
   };
 
+  if (manualRaisedAud != null) {
+    out.raised_aud = Number(manualRaisedAud);
+    out.source = 'manual';
+    out.percent = Math.max(0, Math.min(100, Math.round(out.raised_aud / goal * 100)));
+    return out;
+  }
+
   try {
     const s = await sponsors.get();
     let fx = FALLBACK_FX;
@@ -394,6 +401,7 @@ async function fundStatus() {
 let count = 0;
 let counterIssue = null;
 let dirty = false;
+let manualRaisedAud = null;
 
 let githubState = TOKEN ? 'unchecked' : 'no token';
 
@@ -476,6 +484,12 @@ setInterval(function () {
   });
   recentEntries.forEach(function (t, k) { if (now - t > DUPLICATE_WINDOW) recentEntries.delete(k); });
 }, 5 * 60e3).unref();
+
+setInterval(function () {
+  sponsors.bust();
+  usdToAud.bust();
+  log('Auto-refreshed sponsors and FX data.');
+}, 24 * 60 * 60e3).unref();
 
 const STATIC = {
   '/': ['index.html', 'text/html; charset=utf-8'],
@@ -595,6 +609,26 @@ const server = http.createServer(async function (req, res) {
     if (url.pathname === '/api/fund/refresh' && req.method === 'GET') {
       sponsors.bust();
       usdToAud.bust();
+      return send(res, 200, await fundStatus(), { 'Cache-Control': 'no-store' });
+    }
+
+    if (url.pathname === '/api/fund/set' && req.method === 'POST') {
+      if (!originAllowed(req)) return send(res, 403, { error: 'Not allowed from here.' });
+      if ((req.headers['content-type'] || '').indexOf('application/json') !== 0) {
+        return send(res, 415, { error: 'Bad request.' });
+      }
+      let input;
+      try { input = JSON.parse(await readBody(req)); } catch (e) {
+        return send(res, e.status || 400, { error: 'Bad request.' });
+      }
+      if (!input || typeof input !== 'object' || input.raised_aud == null) {
+        return send(res, 400, { error: 'Bad request.' });
+      }
+      const val = Number(input.raised_aud);
+      if (isNaN(val) || val < 0) {
+        return send(res, 400, { error: 'Bad request.' });
+      }
+      manualRaisedAud = val;
       return send(res, 200, await fundStatus(), { 'Cache-Control': 'no-store' });
     }
 
