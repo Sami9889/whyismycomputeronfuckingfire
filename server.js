@@ -212,6 +212,18 @@ function originAllowed(req) {
   return ALLOWED_ORIGIN !== '*' && ALLOWED_LIST.indexOf(origin) !== -1;
 }
 
+function apiOriginAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return false;
+  try {
+    const host = new URL(origin).host;
+    if (host === req.headers.host) return true;
+    if (TRUST_PROXY && req.headers['x-forwarded-host'] &&
+        String(req.headers['x-forwarded-host']).split(',')[0].trim() === host) return true;
+  } catch (e) { return false; }
+  return ALLOWED_ORIGIN !== '*' && ALLOWED_LIST.indexOf(origin) !== -1;
+}
+
 function clean(s, max) {
   return String(s == null ? '' : s)
     .replace(/[\r\n\t]+/g, ' ')
@@ -604,6 +616,10 @@ const server = http.createServer(async function (req, res) {
 
     if (url.pathname.indexOf('/api/') === 0 && apiLimit(ip)) {
       return send(res, 429, { error: 'Too many requests. Calm down.' }, { 'Retry-After': '60' });
+    }
+
+    if (url.pathname.indexOf('/api/') === 0 && url.pathname !== '/api/health' && !apiOriginAllowed(req)) {
+      return send(res, 403, { error: 'Not allowed from here.' });
     }
 
     if (url.pathname === '/api/challenge' && req.method === 'GET') {
