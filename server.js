@@ -3,6 +3,41 @@
 // whyismycomputeronfuckingfire.com.au backend
 // Made by Sami9889 - https://sami-s.dev
 //
+// One file, no npm packages, Node 18+.  Run:  node server.js
+//
+// What it does
+//   - Serves index.html (and summit.yaml if you have one)
+//   - Guestbook: every submission is a GitHub issue labelled "thermal-incident".
+//     Close an issue on GitHub to take it off the wall.
+//   - Fund bar: reads the money raised from GitHub Sponsors, converts USD -> AUD
+//   - Visitor counter: stored in the body of one issue labelled "counter"
+//
+// Environment
+//   PAT              your GitHub Personal Access Token (store it as a secret named PAT).
+//                    Use a CLASSIC token with the scopes: public_repo (or repo, if the repo
+//                    is private) and read:user. That one token does the guestbook, the
+//                    counter and the Sponsors fund bar.
+//                    Read in this order: PAT, GITHUB_PAT, GITHUB_TOKEN. PAT wins on purpose:
+//                    Codespaces and Actions pre-set GITHUB_TOKEN to a limited token.
+//   SPONSORS_TOKEN   optional separate token for Sponsors data. Falls back to PAT.
+//   GITHUB_API_URL   default https://api.github.com (only change this for testing)
+//   GITHUB_REPO      default Sami9889/whyismycomputeronfuckingfire
+//   SPONSOR_LOGIN    GitHub account that receives sponsorships, default = repo owner
+//   PORT             default 3000
+//   ALLOWED_ORIGIN   default *   = only the page this server serves itself may post. If the page
+//                    also lives elsewhere (GitHub Pages), list its address(es), comma separated,
+//                    e.g. https://whyismycomputeronfuckingfire.com.au,https://sami9889.github.io
+//                    The server's own page keeps working either way.
+//   SECRET           any long random string; signs the anti-bot challenges (random per start if unset)
+//   POW_BITS         anti-bot difficulty, default 18 (each +1 doubles the work)
+//   TRUST_PROXY      set to 1 when behind a proxy/host that sets X-Forwarded-For
+//   USD_TO_AUD       fallback exchange rate if the live rate can't be fetched (default 1.5)
+//
+// Optional summit.yaml next to this file:
+//   fund_goal_aud: 500
+//   sponsor_url: https://github.com/sponsors/Sami9889
+//   raised_aud: 0          # only used if GitHub Sponsors can't be read
+
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -220,16 +255,16 @@ function rateTag(ip, bucket) {
 function originAllowed(req) {
   const origin = req.headers.origin;
   if (!origin) return false;
-  if (ALLOWED_ORIGIN !== '*') return ALLOWED_LIST.indexOf(origin) !== -1;
+  // 1. The page this server serves itself is always allowed.
   try {
     const host = new URL(origin).host;
     if (host === req.headers.host) return true;
     // Behind a proxy (Codespaces, Render, Fly...) the public host arrives in X-Forwarded-Host.
-    if (TRUST_PROXY && req.headers['x-forwarded-host']) {
-      return String(req.headers['x-forwarded-host']).split(',')[0].trim() === host;
-    }
-    return false;
+    if (TRUST_PROXY && req.headers['x-forwarded-host'] &&
+        String(req.headers['x-forwarded-host']).split(',')[0].trim() === host) return true;
   } catch (e) { return false; }
+  // 2. Any other page (e.g. the GitHub Pages site) must be listed in ALLOWED_ORIGIN.
+  return ALLOWED_ORIGIN !== '*' && ALLOWED_LIST.indexOf(origin) !== -1;
 }
 
 // ---------- guestbook (GitHub issues) ----------
