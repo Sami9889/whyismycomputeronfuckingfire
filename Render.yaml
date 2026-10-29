@@ -1,3 +1,14 @@
+# One-click deploy on Render (free): runs server.js, which serves the page AND the API
+# from the same address, so there is nothing to paste into index.html.
+#
+# How: render.com > sign in with GitHub > New > Blueprint > pick this repo > Apply.
+# It will ask for PAT once. Paste your GitHub personal access token there.
+# (GitHub secrets can't be read by a host, so the token is entered on Render, where it
+#  is stored encrypted. It is never in the repo or the page.)
+#
+# Free plan note: the service sleeps after ~15 minutes without visitors and takes
+# around a minute to wake up on the next visit. The guestbook, counter and anti-spam
+# limits all live in GitHub issues, so nothing is lost when it sleeps.
 services:
   - type: web
     name: fire-guestbook
@@ -13,3 +24,6 @@ services:
         generateValue: true
       - key: NODE_VERSION
         value: "20"
+      # Lets the GitHub Pages site (your custom domain) post to this server too.
+      - key: ALLOWED_ORIGIN
+        value: "https://whyismycomputeronfuckingfire.com.au,https://www.whyismycomputeronfuckingfire.com.au,https://sami9889.github.io"
