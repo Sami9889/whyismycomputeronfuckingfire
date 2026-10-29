@@ -576,7 +576,12 @@ function baseHeaders(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com https://fire-guestbook.onrender.com https://api.frankfurter.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('X-Download-Options', 'noopen');
 }
 
 function send(res, status, obj, extra) {
@@ -607,6 +612,22 @@ const server = http.createServer(async function (req, res) {
   try {
     baseHeaders(req, res);
     const url = new URL(req.url, 'http://localhost');
+
+    const badPath = /(\.\.|%2e%2e|%2e%2e%2f|%252e%252e|%c0%ae|c0af|<script|javascript:|vbscript:|onload=|onerror=|eval\(|document\.cookie|localStorage|SELECT.*FROM|UNION.*SELECT|DROP.*TABLE|INSERT.*INTO|DELETE.*FROM|UPDATE.*SET|exec\(|execute\(|system\(|passthru\(|shell_exec\(|popen\(|proc\/self\/environ|\/etc\/passwd|\/etc\/shadow|\/proc\/self\/cmdline|\.env|\.git\/|\.svn\/|\.htaccess|\.htpasswd|wp-admin|wp-content|xmlrpc\.php|\.asp$|\.aspx$|\.php$|\.jsp$|\.cgi$)/i.test(url.pathname + url.search);
+    if (badPath) {
+      return send(res, 403, { error: 'Forbidden.' });
+    }
+
+    if (url.pathname.length > 2000) {
+      return send(res, 414, { error: 'URI too long.' });
+    }
+
+    if (['POST', 'PUT', 'PATCH'].indexOf(req.method) !== -1 && url.pathname.indexOf('/api/') === 0) {
+      const ct = req.headers['content-type'] || '';
+      if (ct.indexOf('application/json') !== 0) {
+        return send(res, 415, { error: 'Unsupported media type.' });
+      }
+    }
 
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
