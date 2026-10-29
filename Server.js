@@ -13,9 +13,14 @@
 //   - Visitor counter: stored in the body of one issue labelled "counter"
 //
 // Environment
-//   GITHUB_TOKEN     fine-grained token, this repo only, "Issues: read and write"
-//   SPONSORS_TOKEN   classic token with read:user (Sponsors data needs a classic token).
-//                    Falls back to GITHUB_TOKEN if not set.
+//   PAT              your GitHub Personal Access Token (store it as a secret named PAT).
+//                    Use a CLASSIC token with the scopes: public_repo (or repo, if the repo
+//                    is private) and read:user. That one token does the guestbook, the
+//                    counter and the Sponsors fund bar.
+//                    Read in this order: PAT, GITHUB_PAT, GITHUB_TOKEN. PAT wins on purpose:
+//                    Codespaces and Actions pre-set GITHUB_TOKEN to a limited token.
+//   SPONSORS_TOKEN   optional separate token for Sponsors data. Falls back to PAT.
+//   GITHUB_API_URL   default https://api.github.com (only change this for testing)
 //   GITHUB_REPO      default Sami9889/whyismycomputeronfuckingfire
 //   SPONSOR_LOGIN    GitHub account that receives sponsorships, default = repo owner
 //   PORT             default 3000
@@ -41,31 +46,17 @@ const path = require('path');
 const PORT = Number(process.env.PORT) || 3000;
 const REPO = process.env.GITHUB_REPO || 'Sami9889/whyismycomputeronfuckingfire';
 const SPONSOR_LOGIN = process.env.SPONSOR_LOGIN || REPO.split('/')[0];
+const TOKEN_NAME = ['PAT', 'GITHUB_PAT', 'GITHUB_TOKEN'].filter(function (n) { return (process.env[n] || '').trim(); })[0] || '';
+const TOKEN = TOKEN_NAME ? process.env[TOKEN_NAME].trim() : '';
+const SPONSORS_TOKEN = (process.env.SPONSORS_TOKEN || '').trim() || TOKEN;
+const GITHUB_URL = (process.env.GITHUB_API_URL || 'https://api.github.com').replace(/\/+$/, '');
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
-const TRUST_PROXY = !!process.env.TRUST_PROXY;
+// On by default on hosts that put a proxy in front of the app.
+const TRUST_PROXY = !!(process.env.TRUST_PROXY || process.env.CODESPACES || process.env.RENDER ||
+                       process.env.FLY_APP_NAME || process.env.RAILWAY_ENVIRONMENT);
 const FALLBACK_FX = Number(process.env.USD_TO_AUD) || 1.5;
 
-// Optional summit.yaml next to this file:
-//   fund_goal_aud: 500
-//   sponsor_url: https://github.com/sponsors/Sami9889
-//   raised_aud: 0          # only used if GitHub Sponsors can't be read
-//   github_token: YOUR_TOKEN   # fine-grained token, this repo only, Issues: read+write
-//                              # falls back to the GITHUB_TOKEN env var if set
-function readConfigFile() {
-  const out = {};
-  try {
-    fs.readFileSync(path.join(__dirname, 'summit.yaml'), 'utf8').split(/\r?\n/).forEach(function (line) {
-      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
-      if (m && m[1].charAt(0) !== '#') out[m[1]] = m[2].replace(/^["']|["']$/g, '').replace(/\s+#.*$/, '');
-    });
-  } catch (e) { /* file is optional */ }
-  return out;
-}
-const CFG = readConfigFile();
-const TOKEN = process.env.GITHUB_TOKEN || CFG.github_token || '';
-const SPONSORS_TOKEN = process.env.SPONSORS_TOKEN || TOKEN;
-
-const API = 'https://api.github.com/repos/' + REPO;
+const API = GITHUB_URL + '/repos/' + REPO;
 const INCIDENT_LABEL = 'thermal-incident';
 const COUNTER_LABEL = 'counter';
 const TEMPS = ['95C', '120C', '500C', '9000C'];
@@ -81,7 +72,10 @@ const DUPLICATE_WINDOW = 24 * 60 * 60e3;
 
 // Anti-spam: posting needs a signed, single-use challenge plus a small proof-of-work.
 const ALLOWED_LIST = ALLOWED_ORIGIN.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-const SECRET = process.env.SECRET || crypto.randomBytes(32).toString('hex'); // set SECRET so tokens survive restarts
+// Stable across restarts (the free host sleeps a lot): set SECRET, or it is derived from the PAT.
+const SECRET = process.env.SECRET ||
+  (TOKEN ? crypto.createHash('sha256').update('fire-guestbook:' + TOKEN).digest('hex') : crypto.randomBytes(32).toString('hex'));
+const MARKER = /<!--\s*t:([a-f0-9]{12})\s+n:([a-f0-9]{24})\s*-->/;
 const POW_BITS = Number(process.env.POW_BITS) || 18;   // ~260k hashes: a few seconds in a browser
 const CHALLENGE_MIN_AGE = 3000;                        // humans take longer than 3s
 const CHALLENGE_MAX_AGE = 10 * 60e3;
@@ -152,7 +146,7 @@ async function gh(method, urlPath, body) {
 }
 
 async function graphql(query, variables) {
-  const res = await fetch('https://api.github.com/graphql', {
+  const res = await fetch(GITHUB_URL + '/graphql', {
     method: 'POST',
     headers: ghHeaders(SPONSORS_TOKEN, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ query: query, variables: variables }),
@@ -164,6 +158,16 @@ async function graphql(query, variables) {
   return json.data;
 }
 
+function readConfigFile() {
+  const out = {};
+  try {
+    fs.readFileSync(path.join(__dirname, 'summit.yaml'), 'utf8').split(/\r?\n/).forEach(function (line) {
+      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
+      if (m && m[1].charAt(0) !== '#') out[m[1]] = m[2].replace(/^["']|["']$/g, '').replace(/\s+#.*$/, '');
+    });
+  } catch (e) { /* file is optional */ }
+  return out;
+}
 
 // ---------- abuse protection ----------
 
@@ -210,7 +214,7 @@ function hasZeroBits(buf, bits) {
   return bits === 0 || (buf[i] >> (8 - bits)) === 0;
 }
 
-// Returns null if the challenge is valid (and burns it), otherwise an error message.
+// Returns { nonce } if the challenge is valid (and burns it), otherwise an error message string.
 function verifyChallenge(ip, token, solution) {
   const BAD = 'Bad anti-bot token. Reload the page and try again.';
   if (typeof token !== 'string' || token.length > 400) return BAD;
@@ -236,7 +240,13 @@ function verifyChallenge(ip, token, solution) {
   if (!hasZeroBits(hash, p.b)) return 'Anti-bot check failed.';
 
   usedChallenges.set(p.n, Date.now() + CHALLENGE_MAX_AGE);
-  return null;
+  return { nonce: p.n };
+}
+
+// Hourly rotating tag: lets us rate-limit by IP using only the issues, without keeping an
+// address anywhere. It cannot be turned back into the IP and changes every hour.
+function rateTag(ip, bucket) {
+  return crypto.createHmac('sha256', SECRET).update('rl:' + ip + ':' + bucket).digest('hex').slice(0, 12);
 }
 
 // Browsers always send Origin on a POST. Only our own page (or ALLOWED_ORIGIN) may post.
@@ -244,7 +254,15 @@ function originAllowed(req) {
   const origin = req.headers.origin;
   if (!origin) return false;
   if (ALLOWED_ORIGIN !== '*') return ALLOWED_LIST.indexOf(origin) !== -1;
-  try { return new URL(origin).host === req.headers.host; } catch (e) { return false; }
+  try {
+    const host = new URL(origin).host;
+    if (host === req.headers.host) return true;
+    // Behind a proxy (Codespaces, Render, Fly...) the public host arrives in X-Forwarded-Host.
+    if (TRUST_PROXY && req.headers['x-forwarded-host']) {
+      return String(req.headers['x-forwarded-host']).split(',')[0].trim() === host;
+    }
+    return false;
+  } catch (e) { return false; }
 }
 
 // ---------- guestbook (GitHub issues) ----------
@@ -312,8 +330,8 @@ async function createIncident(ip, input) {
   }
   if (!TOKEN) return { status: 503, body: { error: 'Guestbook is offline (server has no GitHub token).' } };
 
-  const bad = verifyChallenge(ip, input.challenge, input.solution);
-  if (bad) return { status: 403, body: { error: bad } };
+  const v = verifyChallenge(ip, input.challenge, input.solution);
+  if (typeof v === 'string') return { status: 403, body: { error: v } };
 
   const fingerprint = (name + '|' + temp + '|' + method).toLowerCase();
   const seen = recentEntries.get(fingerprint);
@@ -326,10 +344,40 @@ async function createIncident(ip, input) {
     return { status: 429, retryAfter: wait, body: { error: 'One entry per person, mate. Try again in ' + Math.ceil(wait / 60) + ' min.' } };
   }
 
+  // The same limits again, read back from the issues, so they still hold after a restart.
+  const recent = await gh('GET', '/issues?labels=' + INCIDENT_LABEL + '&state=all&per_page=30');
+  const now = Date.now();
+  const bucket = Math.floor(now / 3600e3);
+  const myTags = [rateTag(ip, bucket), rateTag(ip, bucket - 1)];
+  let inLastHour = 0;
+  for (let k = 0; k < recent.length; k++) {
+    const i = recent[k];
+    if (i.pull_request) continue;
+    const age = now - Date.parse(i.created_at);
+    const mark = (i.body || '').match(MARKER);
+    if (mark && mark[2] === v.nonce) return { status: 403, body: { error: 'That token was already used.' } };
+    if (age < PER_IP_WINDOW) {
+      inLastHour++;
+      if (mark && myTags.indexOf(mark[1]) !== -1) {
+        return { status: 429, retryAfter: 3600, body: { error: 'One entry per person, mate. Try again in an hour.' } };
+      }
+    }
+    if (age < DUPLICATE_WINDOW) {
+      const b = i.body || '';
+      const n = b.match(/\*\*Handle:\*\* ([^\n]+)/), t = b.match(/\*\*Temperature:\*\* ([^\n]+)/), m = b.match(/\*\*Emergency Method:\*\* ([^\n]+)/);
+      if (n && t && m && (n[1].trim() + '|' + t[1].trim() + '|' + m[1].trim()).toLowerCase() === fingerprint) {
+        return { status: 409, body: { error: 'That one is already on the wall.' } };
+      }
+    }
+  }
+  if (inLastHour >= GLOBAL_LIMIT) {
+    return { status: 429, retryAfter: 3600, body: { error: 'The wall is full for now. Try again later.' } };
+  }
+
   await gh('POST', '/issues', {
     title: 'THERMAL INCIDENT: ' + name + ' (' + temp + ')',
     body: '**Handle:** ' + name + '\n\n**Temperature:** ' + temp + '\n\n**Emergency Method:** ' + method +
-          '\n\nSubmitted via whyismycomputeronfuckingfire.com.au',
+          '\n\nSubmitted via whyismycomputeronfuckingfire.com.au\n\n<!-- t:' + myTags[0] + ' n:' + v.nonce + ' -->',
     labels: [INCIDENT_LABEL]
   });
   recordPost(ip, fingerprint);
@@ -410,8 +458,44 @@ let counterIssue = null;
 let dirty = false;
 const hitSeen = new Map(); // ip -> timestamp
 
+let githubState = TOKEN ? 'unchecked' : 'no token';
+
+// Run once at startup so a bad PAT shows up in the log straight away, with the reason.
+async function checkToken() {
+  if (!TOKEN) return;
+  try {
+    const res = await fetch(GITHUB_URL + '/user', { headers: ghHeaders(TOKEN), signal: AbortSignal.timeout(HTTP_TIMEOUT) });
+    if (res.status === 401) {
+      githubState = 'token rejected';
+      log('GitHub REJECTED the token from ' + TOKEN_NAME + ' (401). It is wrong, expired or revoked. Make a new one and update the secret.');
+      return;
+    }
+    if (!res.ok) throw new Error('GitHub ' + res.status);
+    const who = await res.json();
+    const scopes = res.headers.get('x-oauth-scopes');
+    if (scopes === null) {
+      log('GitHub token OK (' + TOKEN_NAME + ', fine-grained) as ' + who.login + '. Needs Issues: read and write on this repo. Sponsors data needs a classic token.');
+    } else {
+      const list = scopes.split(',').map(function (s) { return s.trim(); });
+      log('GitHub token OK (' + TOKEN_NAME + ', classic) as ' + who.login + ' | scopes: ' + (scopes || 'none'));
+      if (list.indexOf('repo') === -1 && list.indexOf('public_repo') === -1) log('WARNING: the token has no public_repo scope, so the guestbook cannot post.');
+      if (list.indexOf('read:user') === -1 && list.indexOf('user') === -1) log('WARNING: the token has no read:user scope, so the fund bar cannot read Sponsors.');
+    }
+    const repo = await fetch(API, { headers: ghHeaders(TOKEN), signal: AbortSignal.timeout(HTTP_TIMEOUT) });
+    if (repo.status === 404) {
+      githubState = 'repo not found';
+      log('WARNING: GitHub says repo ' + REPO + ' does not exist, or the token cannot see it. Check GITHUB_REPO and the token\'s access.');
+      return;
+    }
+    githubState = 'ok';
+  } catch (e) {
+    githubState = 'unreachable';
+    log('Could not check the GitHub token:', e.message);
+  }
+}
+
 async function initCounter() {
-  if (!TOKEN) { log('No GITHUB_TOKEN: counter is in-memory only and the guestbook is read-only.'); return; }
+  if (!TOKEN) { log('No PAT set: counter is in-memory only and the guestbook is read-only.'); return; }
   const found = await gh('GET', '/issues?labels=' + COUNTER_LABEL + '&state=open&per_page=1');
   if (found.length) {
     counterIssue = found[0].number;
@@ -536,7 +620,7 @@ const server = http.createServer(async function (req, res) {
     }
 
     if (url.pathname === '/api/health' && req.method === 'GET') {
-      return send(res, 200, { ok: true, counter: count, guestbook: !!TOKEN });
+      return send(res, 200, { ok: true, counter: count, guestbook: !!TOKEN, github: githubState });
     }
 
     if (url.pathname === '/api/incidents' && req.method === 'GET') {
@@ -562,7 +646,8 @@ const server = http.createServer(async function (req, res) {
     }
 
     if (url.pathname === '/api/hit' && req.method === 'GET') {
-      return send(res, 200, { value: registerHit(ip) });
+      // The page sends ?peek=1 when the visitor already has the cookie, so it only reads the number.
+      return send(res, 200, { value: url.searchParams.get('peek') ? count : registerHit(ip) });
     }
 
     if (req.method === 'GET' && STATIC[url.pathname]) {
@@ -585,11 +670,11 @@ const server = http.createServer(async function (req, res) {
 server.requestTimeout = 15e3;
 server.headersTimeout = 10e3;
 
-initCounter().catch(function (e) { log('Counter init failed:', e.message); });
+checkToken().then(initCounter).catch(function (e) { log('Counter init failed:', e.message); });
 
 server.listen(PORT, function () {
   log('Listening on port ' + PORT + ' | repo ' + REPO + ' | sponsors for ' + SPONSOR_LOGIN);
-  if (!TOKEN) log('Warning: GITHUB_TOKEN not set.');
+  log(TOKEN ? 'Using the token from ' + TOKEN_NAME : 'WARNING: no PAT set. Add a secret/env var named PAT with your GitHub personal access token.');
   if (!TRUST_PROXY) log('Note: TRUST_PROXY is off. Behind a proxy, every visitor will look like one IP; set TRUST_PROXY=1.');
 });
 
