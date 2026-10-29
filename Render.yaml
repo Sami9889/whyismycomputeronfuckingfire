@@ -25,7 +25,7 @@ services:
 
   - type: cron
     name: fire-keepalive
-    schedule: "*/14 * * * *"
+    schedule: "*/13 * * * *"
     runtime: node
     buildCommand: echo "nothing to build"
     startCommand: node -e "const http=require('http');setInterval(()=>{http.get('https://fire-guestbook.onrender.com/api/health',()=>{})},0);process.stdin.resume();"

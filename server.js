@@ -551,7 +551,8 @@ function baseHeaders(req, res) {
 }
 
 function send(res, status, obj, extra) {
-  const headers = Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, extra || {});
+  const existing = res.getHeaders();
+  const headers = Object.assign({}, existing, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, extra || {});
   res.writeHead(status, headers);
   res.end(JSON.stringify(obj));
 }
