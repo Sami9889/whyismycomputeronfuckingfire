@@ -128,7 +128,7 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <font color="#00CCCC" class="small">Think your rig runs hotter than everyone else's? Tell us about it. Entries are stored as GitHub issues.</font>
 <br><br>
 
-<form onsubmit="return submitIncident();" action="#">
+<form onsubmit="try { submitIncident(); } catch (e) { document.getElementById('inc-success').innerHTML = '<font color=&quot;#FF3300&quot;>Something broke: ' + e.message + '</font>'; } return false;" action="javascript:void(0);" method="get">
 <table width="92%" border="0" cellpadding="3" cellspacing="0">
 <tr>
 <td width="32%" align="right"><font color="#FFFFFF">Your name:</font></td>
@@ -216,11 +216,12 @@ Last updated: October 2026.<br>
 </center>
 
 <script type="text/javascript">
+// Where the guestbook backend lives.
+//  - Leave blank when server.js is serving this page (the normal case, e.g. on Render).
+//  - Only fill it in if the page is hosted somewhere else, e.g.
+//    var API = 'https://fire-guestbook.onrender.com';
+var API = '';
 var REPO = 'Sami9889/whyismycomputeronfuckingfire';
-
-function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function showResult(type) {
     var res = document.getElementById('result');
@@ -245,72 +246,70 @@ function showResult(type) {
     res.style.display = 'block';
 }
 
-function loadCache() {
-    var feed = document.getElementById('incident-feed');
-    feed.innerHTML = 'Loading entries...';
-    fetch('cache.json', { cache: 'no-cache' })
-    .then(function(r) { return r.ok ? r.json() : null; })
-    .then(function(d) {
-        if (d && d.incidents) {
-            loadIncidentsFromCache(d.incidents);
-            applyFund(d);
-            return;
+function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Anti-bot sum: find a number that makes SHA-256(token:number) start with `bits` zero bits.
+function solveChallenge(token, bits, done) {
+    var enc = new TextEncoder();
+    var n = 0;
+    function ok(h) {
+        var b = bits, i = 0;
+        while (b >= 8) { if (h[i] !== 0) return false; i++; b -= 8; }
+        return b === 0 || (h[i] >> (8 - b)) === 0;
+    }
+    function step() {
+        var jobs = [];
+        for (var k = 0; k < 500; k++) {
+            jobs.push(crypto.subtle.digest('SHA-256', enc.encode(token + ':' + (n + k).toString(36))));
         }
-        loadFallback();
-    })
-    .catch(function() { loadFallback(); });
-}
-
-function loadIncidentsFromCache(list) {
-    var feed = document.getElementById('incident-feed');
-    if (!list || !list.length) { feed.innerHTML = 'No entries yet. Be the first!'; return; }
-    var html = '';
-    list.forEach(function(it) {
-        var b = it.body || '';
-        var n = b.match(/\*\*Handle:\*\* ([^\n]+)/);
-        var t = b.match(/\*\*Temperature:\*\* ([^\n]+)/);
-        var m = b.match(/\*\*Emergency Method:\*\* ([^\n]+)/);
-        var nm = (n && n[1]) || it.title;
-        var tm = (t && t[1]) || '?';
-        var mm = (m && m[1]) || b;
-        html += '<div style="border-bottom:1px dotted #333333; padding:3px 0;">' +
-                '<font color="#00CCCC"><b>' + esc(nm.trim()) + '</b></font> ' +
-                '(<font color="#FF3300">' + esc(tm.trim()) + '</font>): ' +
-                '<font color="#FFFF00">' + esc(mm.trim()) + '</font></div>';
-    });
-    feed.innerHTML = html;
-}
-
-function applyFund(d) {
-    var goal = Number(d.goal_aud) || 500;
-    var raised = Number(d.raised_aud) || Number(d.raised_usd) || 0;
-    var pct = Math.max(0, Math.min(100, Math.round((raised / goal) * 100)));
-    document.getElementById('fund-target').textContent = goal;
-    document.getElementById('fund-now').textContent = raised.toFixed(2).replace(/\.00$/,'');
-    document.getElementById('fund-bar').setAttribute('width', Math.max(2, pct) + '%');
-    if (d.sponsor_url) document.getElementById('sponsor-link').href = d.sponsor_url;
-    if (d.sponsor_count) document.getElementById('fund-supporters').textContent = d.sponsor_count + ' sponsors';
-}
-
-function loadFallback() {
-    fetch('summit.yaml')
-    .then(function(r) { return r.ok ? r.text() : null; })
-    .then(function(text) {
-        if (!text) return;
-        var cfg = {};
-        text.split(/\r?\n/).forEach(function(line) {
-            var m = line.match(/^([^:]+):\s*(.*)$/);
-            if (m) cfg[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g,'');
+        Promise.all(jobs).then(function(hashes) {
+            for (var k = 0; k < hashes.length; k++) {
+                if (ok(new Uint8Array(hashes[k]))) { done((n + k).toString(36)); return; }
+            }
+            n += 500;
+            setTimeout(step, 0);
         });
-        if (cfg.sponsor_url) document.getElementById('sponsor-link').href = cfg.sponsor_url;
-        var goal = Number(cfg.fund_goal_aud) || 500;
-        var raised = Number(cfg.raised_aud) || 0;
-        document.getElementById('fund-target').textContent = goal;
-        document.getElementById('fund-now').textContent = raised.toFixed(2).replace(/\.00$/,'');
-        var pct = Math.max(0, Math.min(100, Math.round((raised / goal) * 100)));
-        document.getElementById('fund-bar').setAttribute('width', Math.max(2, pct) + '%');
-    })
-    .catch(function() {});
+    }
+    step();
+}
+
+function getProof() {
+    return new Promise(function(resolve, reject) {
+        // fail() shows a message from the server; noServer() means use the GitHub fallback.
+        function fail(m) { var e = new Error(m); e.userMessage = m; reject(e); }
+        function noServer(reason) { var e = new Error('no server'); e.reason = reason; reject(e); }
+        if (!window.crypto || !crypto.subtle) { noServer('crypto'); return; }
+        fetch(API + '/api/challenge')
+        .then(function(r) {
+            return r.text().then(function(t) {
+                try { return JSON.parse(t); }
+                catch (x) { var err = new Error('html'); err.reason = 'html'; throw err; }
+            });
+        })
+        .then(function(c) {
+            if (c && c.error) { fail(c.error); return; }
+            if (!c || !c.token) { noServer('html'); return; }
+            var got = new Date().getTime();
+            solveChallenge(c.token, c.bits, function(solution) {
+                var wait = Math.max(0, (c.min_wait_ms || 0) - (new Date().getTime() - got));
+                setTimeout(function() { resolve({ token: c.token, solution: solution }); }, wait + 200);
+            });
+        })
+        .catch(function(e) { noServer(e && e.reason ? e.reason : 'network'); });
+    });
+}
+
+function whyNoServer(reason) {
+    if (!API && (location.protocol == 'about:' || location.protocol == 'file:' || location.protocol == 'blob:' || !location.host)) {
+        return 'This page is not being served by the guestbook server. Open the site from its real address (the one running server.js).';
+    }
+    var tried = (API || (location.protocol + '//' + location.host)) + '/api/challenge';
+    if (reason == 'crypto') return 'Your browser blocks the anti-bot check on plain http. Open the site over https.';
+    if (reason == 'html') return 'This address is not running server.js (' + tried + ' answered with a web page, not the guestbook).';
+    if (location.protocol == 'file:') return 'You opened the file straight from disk. Run server.js and open the page from it instead.';
+    return 'Could not connect to ' + tried + '.';
 }
 
 function submitIncident() {
@@ -322,21 +321,102 @@ function submitIncident() {
         msg.innerHTML = '<font color="#FF3300">Please fill in your name and what you tried.</font>';
         return false;
     }
-    var title = encodeURIComponent('THERMAL INCIDENT: ' + name + ' (' + temp + ')');
-    var body = encodeURIComponent(
-        '**Handle:** ' + name + '\n\n' +
-        '**Temperature:** ' + temp + '\n\n' +
-        '**Emergency Method:** ' + method + '\n\n' +
-        'Submitted via whyismycomputeronfuckingfire.com.au'
-    );
-    var url = 'https://github.com/' + REPO + '/issues/new?title=' + title + '&body=' + body + '&labels=thermal-incident';
-    msg.innerHTML = '<font color="#33FF33">Opening GitHub... <a href="' + url + '" target="_blank" rel="noopener noreferrer">Click here if nothing happens</a></font>';
-    var w = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!w) window.location.href = url;
-    document.getElementById('inc-name').value = '';
-    document.getElementById('inc-method').value = '';
-    setTimeout(loadCache, 2000);
+    msg.innerHTML = '<font color="#FFFF00">Checking you are not a robot, give it a few seconds...</font>';
+    getProof()
+    .then(function(proof) {
+        return fetch(API + '/api/incidents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, temp: temp, method: method, challenge: proof.token, solution: proof.solution })
+        });
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(x) {
+        if (x.ok) {
+            msg.innerHTML = '<font color="#33FF33">Thanks ' + esc(name) + '! You are in the guestbook.</font>';
+            document.getElementById('inc-name').value = '';
+            document.getElementById('inc-method').value = '';
+            loadIncidents();
+        } else {
+            msg.innerHTML = '<font color="#FF3300">' + esc((x.d && x.d.error) || 'Something went wrong.') + '</font>';
+        }
+    })
+    .catch(function(e) {
+        if (e && e.userMessage) {
+            msg.innerHTML = '<font color="#FF3300">' + esc(e.userMessage) + '</font>';
+            return;
+        }
+        // Server not reachable: let them sign through GitHub directly.
+        var title = 'THERMAL INCIDENT: ' + name + ' (' + temp + ')';
+        var body = '**Handle:** ' + name + '\n\n**Temperature:** ' + temp + '\n\n**Emergency Method:** ' + method;
+        var url = 'https://github.com/' + REPO + '/issues/new?labels=thermal-incident&title=' +
+                  encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+        msg.innerHTML = '<font color="#FFFF00">The guestbook server is asleep.</font><br>' +
+                        '<font class="small" color="#999999">' + esc(whyNoServer(e && e.reason)) + '</font><br><br>' +
+                        '<a href="' + esc(url) + '" target="_blank" rel="noopener"><b>Click here to sign on GitHub instead</b></a>' +
+                        '<font color="#999999"> (press "Submit new issue" there).</font><br>' +
+                        '<font class="small" color="#999999">Link not opening? Copy this address into a new browser tab:</font><br>' +
+                        '<input class="txt" type="text" size="44" readonly value="' + esc(url) + '" onclick="this.select();">';
+    });
     return false;
+}
+
+function loadIncidents() {
+    var feed = document.getElementById('incident-feed');
+    feed.innerHTML = 'Loading entries...';
+    fetch(API + '/api/incidents')
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+        var html = '';
+        if (!list || !list.length) { feed.innerHTML = 'No entries yet. Be the first!'; return; }
+        for (var i = 0; i < list.length; i++) {
+            html += '<div style="border-bottom:1px dotted #333333; padding:3px 0;">' +
+                    '<font color="#00CCCC"><b>' + esc(list[i].name) + '</b></font> ' +
+                    '(<font color="#FF3300">' + esc(list[i].temp) + '</font>): ' +
+                    '<font color="#FFFF00">' + esc(list[i].method) + '</font></div>';
+        }
+        feed.innerHTML = html;
+    })
+    .catch(function() { loadIncidentsFromGitHub(feed); });
+}
+
+// Fallback when server.js is not running: read the public issues straight from GitHub.
+function loadIncidentsFromGitHub(feed) {
+    fetch('https://api.github.com/repos/' + REPO + '/issues?labels=thermal-incident&state=open&per_page=30')
+    .then(function(r) { return r.json(); })
+    .then(function(list) {
+        if (!list || !list.length) { feed.innerHTML = 'No entries yet. Be the first!'; return; }
+        var html = '';
+        for (var i = 0; i < list.length; i++) {
+            var b = list[i].body || '';
+            var n = b.match(/\*\*Handle:\*\* ([^\n]+)/);
+            var t = b.match(/\*\*Temperature:\*\* ([^\n]+)/);
+            var m = b.match(/\*\*Emergency Method:\*\* ([^\n]+)/);
+            html += '<div style="border-bottom:1px dotted #333333; padding:3px 0;">' +
+                    '<font color="#00CCCC"><b>' + esc(n ? n[1] : list[i].title) + '</b></font> ' +
+                    '(<font color="#FF3300">' + esc(t ? t[1] : '?') + '</font>): ' +
+                    '<font color="#FFFF00">' + esc(m ? m[1] : '') + '</font></div>';
+        }
+        feed.innerHTML = html;
+    })
+    .catch(function() { feed.innerHTML = '<font color="#FF3300">Could not load the guestbook.</font>'; });
+}
+
+function loadFund() {
+    fetch(API + '/api/fund')
+    .then(function(r) { return r.json(); })
+    .then(function(f) {
+        if (!f || f.goal_aud == null) return;
+        document.getElementById('fund-now').innerHTML = esc(Math.round(f.raised_aud));
+        document.getElementById('fund-target').innerHTML = esc(f.goal_aud);
+        var pct = Math.max(2, Math.min(100, f.percent || 0));
+        document.getElementById('fund-bar').setAttribute('width', pct + '%');
+        if (f.sponsor_url) document.getElementById('sponsor-link').href = f.sponsor_url;
+        if (f.supporters) {
+            document.getElementById('fund-supporters').innerHTML = esc(f.supporters) + (f.supporters == 1 ? ' supporter' : ' supporters') + ' so far. Legends.';
+        }
+    })
+    .catch(function() {});
 }
 
 function setCounter(n) {
@@ -347,18 +427,35 @@ function setCounter(n) {
     document.getElementById('counter-row').innerHTML = html;
 }
 
+// Visitor counter: a cookie remembers who has been counted, so reloads and return visits
+// only read the number. Only a brand-new visitor adds one.
+function wasCounted() {
+    try { if (document.cookie.indexOf('fire_visitor=1') !== -1) return true; } catch (e) {}
+    try { if (window.localStorage && localStorage.getItem('fire_visitor') == '1') return true; } catch (e) {}
+    return false;
+}
+
+function markCounted() {
+    try { document.cookie = 'fire_visitor=1; max-age=31536000; path=/; SameSite=Lax'; } catch (e) {}
+    try { if (window.localStorage) localStorage.setItem('fire_visitor', '1'); } catch (e) {}
+}
+
 function loadCounter() {
-    fetch('https://api.countapi.xyz/hit/' + REPO, { headers: { 'Accept': 'application/json' } })
+    var counted = wasCounted();
+    fetch(API + '/api/hit' + (counted ? '?peek=1' : ''))
     .then(function(r) { return r.json(); })
     .then(function(d) {
-        var n = d && d.value != null ? d.value : 0;
-        setCounter(n);
+        if (d && d.value != null) {
+            setCounter(d.value);
+            if (!counted) markCounted();
+        }
     })
     .catch(function() {});
 }
 
 window.onload = function() {
-    loadCache();
+    loadIncidents();
+    loadFund();
     loadCounter();
 };
 </script>
