@@ -31,7 +31,6 @@ const PER_IP_LIMIT = 1;
 const PER_IP_WINDOW = 60 * 60e3;
 const GLOBAL_LIMIT = 30;
 const GLOBAL_WINDOW = 60 * 60e3;
-const HIT_WINDOW = 60 * 60e3;
 const DUPLICATE_WINDOW = 24 * 60 * 60e3;
 
 const ALLOWED_LIST = ALLOWED_ORIGIN.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -393,7 +392,6 @@ async function fundStatus() {
 let count = 0;
 let counterIssue = null;
 let dirty = false;
-const hitSeen = new Map();
 
 let githubState = TOKEN ? 'unchecked' : 'no token';
 
@@ -455,13 +453,8 @@ async function saveCounter() {
 }
 
 function registerHit(ip) {
-  const now = Date.now();
-  const last = hitSeen.get(ip);
-  if (!last || now - last > HIT_WINDOW) {
-    hitSeen.set(ip, now);
-    count++;
-    dirty = true;
-  }
+  count++;
+  dirty = true;
   return count;
 }
 
@@ -473,7 +466,6 @@ setInterval(function () {
     const keep = v.filter(function (t) { return now - t < PER_IP_WINDOW; });
     if (keep.length) ipPosts.set(k, keep); else ipPosts.delete(k);
   });
-  hitSeen.forEach(function (t, k) { if (now - t > HIT_WINDOW) hitSeen.delete(k); });
   usedChallenges.forEach(function (exp, k) { if (exp < now) usedChallenges.delete(k); });
   limiters.forEach(function (l) {
     l.store.forEach(function (hits, k) {
