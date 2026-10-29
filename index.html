@@ -216,11 +216,9 @@ Last updated: October 2026.<br>
 </center>
 
 <script type="text/javascript">
-// Where the guestbook backend lives.
-//  - Leave blank when server.js is serving this page (the normal case, e.g. on Render).
-//  - Only fill it in if the page is hosted somewhere else, e.g.
-//    var API = 'https://fire-guestbook.onrender.com';
-var API = '';
+// Where the guestbook backend (server.js on Render) lives. The page on the .com.au domain
+// is served by GitHub Pages, which has no /api, so the address is set here directly.
+var API = 'https://fire-guestbook.onrender.com';
 var REPO = 'Sami9889/whyismycomputeronfuckingfire';
 
 function showResult(type) {
@@ -456,6 +454,7 @@ function loadCounter() {
 // summit.yaml is the settings file. If the page is hosted away from server.js (GitHub Pages),
 // it holds api_url, the address of the guestbook server.
 function readSettings(done) {
+    if (API) { done(); return; }   // address already set above, nothing to look up
     fetch('summit.yaml', { cache: 'no-store' })
     .then(function(r) { return r.ok ? r.text() : ''; })
     .then(function(text) {
