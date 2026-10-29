@@ -525,12 +525,18 @@ const STATIC = {
 };
 
 function baseHeaders(req, res) {
-  if (ALLOWED_ORIGIN !== '*') {
-    const origin = req.headers.origin;
-    if (origin && ALLOWED_LIST.indexOf(origin) !== -1) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
-    }
+  const origin = req.headers.origin;
+  if (origin) {
+    try {
+      const host = new URL(origin).host;
+      if (host === req.headers.host) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      } else if (ALLOWED_ORIGIN !== '*' && ALLOWED_LIST.indexOf(origin) !== -1) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      }
+    } catch (e) {}
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
