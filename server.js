@@ -24,10 +24,10 @@
 //   GITHUB_REPO      default Sami9889/whyismycomputeronfuckingfire
 //   SPONSOR_LOGIN    GitHub account that receives sponsorships, default = repo owner
 //   PORT             default 3000
-//   ALLOWED_ORIGIN   default *   = only the page this server serves itself may post. If the page
-//                    also lives elsewhere (GitHub Pages), list its address(es), comma separated,
-//                    e.g. https://whyismycomputeronfuckingfire.com.au,https://sami9889.github.io
-//                    The server's own page keeps working either way.
+//   ALLOWED_ORIGIN   default = the .com.au domain, its www version and sami9889.github.io.
+//                    Comma separated list of other addresses allowed to use this server from
+//                    another site. Set to * to allow only this server's own page.
+//                    The server's own page always works either way.
 //   SECRET           any long random string; signs the anti-bot challenges (random per start if unset)
 //   POW_BITS         anti-bot difficulty, default 18 (each +1 doubles the work)
 //   TRUST_PROXY      set to 1 when behind a proxy/host that sets X-Forwarded-For
@@ -52,7 +52,10 @@ const TOKEN_NAME = ['PAT', 'GITHUB_PAT', 'GITHUB_TOKEN'].filter(function (n) { r
 const TOKEN = TOKEN_NAME ? process.env[TOKEN_NAME].trim() : '';
 const SPONSORS_TOKEN = (process.env.SPONSORS_TOKEN || '').trim() || TOKEN;
 const GITHUB_URL = (process.env.GITHUB_API_URL || 'https://api.github.com').replace(/\/+$/, '');
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+// Pages allowed to talk to this server from another address (the GitHub Pages site).
+// Overridable with the ALLOWED_ORIGIN env var; set it to * to allow only this server's own page.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
+  'https://whyismycomputeronfuckingfire.com.au,https://www.whyismycomputeronfuckingfire.com.au,https://sami9889.github.io';
 // On by default on hosts that put a proxy in front of the app.
 const TRUST_PROXY = !!(process.env.TRUST_PROXY || process.env.CODESPACES || process.env.RENDER ||
                        process.env.FLY_APP_NAME || process.env.RAILWAY_ENVIRONMENT);
