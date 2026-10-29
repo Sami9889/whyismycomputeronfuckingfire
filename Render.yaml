@@ -1,6 +1,6 @@
 # Render blueprint: web service + keep-alive cron
 # Web service runs server.js (serves page + API)
-# Cron service pings /api/health every 14 min to prevent Render free-tier sleep
+# Cron service pings /api/health every 13 min to prevent Render free-tier sleep
 #
 # Free plan note: Render web services still sleep after ~15 min without traffic.
 # The cron below pings the health endpoint to keep it warm, but it may still sleep
