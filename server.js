@@ -1,49 +1,11 @@
 'use strict';
 
-// whyismycomputeronfuckingfire.com.au backend
-// Made by Sami9889 - https://sami-s.dev
-//
-// One file, no npm packages, Node 18+.  Run:  node server.js
-//
-// What it does
-//   - Serves index.html (and summit.yaml if you have one)
-//   - Guestbook: every submission is a GitHub issue labelled "thermal-incident".
-//     Close an issue on GitHub to take it off the wall.
-//   - Fund bar: reads the money raised from GitHub Sponsors, converts USD -> AUD
-//   - Visitor counter: stored in the body of one issue labelled "counter"
-//
-// Environment
-//   PAT              your GitHub Personal Access Token (store it as a secret named PAT).
-//                    Use a CLASSIC token with the scopes: public_repo (or repo, if the repo
-//                    is private) and read:user. That one token does the guestbook, the
-//                    counter and the Sponsors fund bar.
-//                    Read in this order: PAT, GITHUB_PAT, GITHUB_TOKEN. PAT wins on purpose:
-//                    Codespaces and Actions pre-set GITHUB_TOKEN to a limited token.
-//   SPONSORS_TOKEN   optional separate token for Sponsors data. Falls back to PAT.
-//   GITHUB_API_URL   default https://api.github.com (only change this for testing)
-//   GITHUB_REPO      default Sami9889/whyismycomputeronfuckingfire
-//   SPONSOR_LOGIN    GitHub account that receives sponsorships, default = repo owner
-//   PORT             default 3000
-//   ALLOWED_ORIGIN   default = the .com.au domain, its www version and sami9889.github.io.
-//                    Comma separated list of other addresses allowed to use this server from
-//                    another site. Set to * to allow only this server's own page.
-//                    The server's own page always works either way.
-//   SECRET           any long random string; signs the anti-bot challenges (random per start if unset)
-//   POW_BITS         anti-bot difficulty, default 18 (each +1 doubles the work)
-//   TRUST_PROXY      set to 1 when behind a proxy/host that sets X-Forwarded-For
-//   USD_TO_AUD       fallback exchange rate if the live rate can't be fetched (default 1.5)
-//
-// Optional summit.yaml next to this file:
-//   fund_goal_aud: 500
-//   sponsor_url: https://github.com/sponsors/Sami9889
-//   raised_aud: 0          # only used if GitHub Sponsors can't be read
+// Copyright (c) 2026 whyismycomputeronfuckingfire.com.au. All rights reserved.
 
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-
-// ---------- config ----------
 
 const PORT = Number(process.env.PORT) || 3000;
 const REPO = process.env.GITHUB_REPO || 'Sami9889/whyismycomputeronfuckingfire';
@@ -52,11 +14,8 @@ const TOKEN_NAME = ['PAT', 'GITHUB_PAT', 'GITHUB_TOKEN'].filter(function (n) { r
 const TOKEN = TOKEN_NAME ? process.env[TOKEN_NAME].trim() : '';
 const SPONSORS_TOKEN = (process.env.SPONSORS_TOKEN || '').trim() || TOKEN;
 const GITHUB_URL = (process.env.GITHUB_API_URL || 'https://api.github.com').replace(/\/+$/, '');
-// Pages allowed to talk to this server from another address (the GitHub Pages site).
-// Overridable with the ALLOWED_ORIGIN env var; set it to * to allow only this server's own page.
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ||
   'https://whyismycomputeronfuckingfire.com.au,https://www.whyismycomputeronfuckingfire.com.au,https://sami9889.github.io';
-// On by default on hosts that put a proxy in front of the app.
 const TRUST_PROXY = !!(process.env.TRUST_PROXY || process.env.CODESPACES || process.env.RENDER ||
                        process.env.FLY_APP_NAME || process.env.RAILWAY_ENVIRONMENT);
 const FALLBACK_FX = Number(process.env.USD_TO_AUD) || 1.5;
@@ -68,31 +27,25 @@ const TEMPS = ['95C', '120C', '500C', '9000C'];
 
 const HTTP_TIMEOUT = 8000;
 const MAX_BODY_BYTES = 4096;
-const PER_IP_LIMIT = 1;               // guestbook posts per IP...
-const PER_IP_WINDOW = 60 * 60e3;      // ...per hour
-const GLOBAL_LIMIT = 30;              // guestbook posts per hour, whole site
+const PER_IP_LIMIT = 1;
+const PER_IP_WINDOW = 60 * 60e3;
+const GLOBAL_LIMIT = 30;
 const GLOBAL_WINDOW = 60 * 60e3;
-const HIT_WINDOW = 60 * 60e3;         // a visitor counts once per hour
+const HIT_WINDOW = 60 * 60e3;
 const DUPLICATE_WINDOW = 24 * 60 * 60e3;
 
-// Anti-spam: posting needs a signed, single-use challenge plus a small proof-of-work.
 const ALLOWED_LIST = ALLOWED_ORIGIN.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-// Stable across restarts (the free host sleeps a lot): set SECRET, or it is derived from the PAT.
 const SECRET = process.env.SECRET ||
   (TOKEN ? crypto.createHash('sha256').update('fire-guestbook:' + TOKEN).digest('hex') : crypto.randomBytes(32).toString('hex'));
 const MARKER = /<!--\s*t:([a-f0-9]{12})\s+n:([a-f0-9]{24})\s*-->/;
-const POW_BITS = Number(process.env.POW_BITS) || 18;   // ~260k hashes: a few seconds in a browser
-const CHALLENGE_MIN_AGE = 3000;                        // humans take longer than 3s
+const POW_BITS = Number(process.env.POW_BITS) || 18;
+const CHALLENGE_MIN_AGE = 3000;
 const CHALLENGE_MAX_AGE = 10 * 60e3;
 
 function log() {
   console.log.apply(console, [new Date().toISOString()].concat([].slice.call(arguments)));
 }
 
-// ---------- helpers ----------
-
-// Cache a value for ttl ms. Shares one in-flight request, and serves the last good
-// value if a refresh fails.
 function cache(ttl, loader) {
   let value, at = 0, pending = null;
   return {
@@ -128,7 +81,6 @@ async function failFrom(res) {
   return err;
 }
 
-// GETs use ETags: an unchanged answer (304) does not count against the rate limit.
 const etags = new Map();
 
 async function gh(method, urlPath, body) {
@@ -174,10 +126,7 @@ function readConfigFile() {
   return out;
 }
 
-// ---------- abuse protection ----------
-
 const limiters = [];
-// Sliding-window limiter: returns true when `key` has gone over `max` hits in `windowMs`.
 function makeLimiter(max, windowMs) {
   const store = new Map();
   limiters.push({ store: store, windowMs: windowMs });
@@ -190,10 +139,10 @@ function makeLimiter(max, windowMs) {
   };
 }
 
-const apiLimit = makeLimiter(60, 60e3);       // any API call: 60 / minute / IP
-const challengeLimit = makeLimiter(10, 60e3); // challenges: 10 / minute / IP
+const apiLimit = makeLimiter(60, 60e3);
+const challengeLimit = makeLimiter(10, 60e3);
 
-const usedChallenges = new Map(); // nonce -> expiry
+const usedChallenges = new Map();
 
 function ipTag(ip) {
   return crypto.createHash('sha256').update(String(ip)).digest('hex').slice(0, 16);
@@ -219,7 +168,6 @@ function hasZeroBits(buf, bits) {
   return bits === 0 || (buf[i] >> (8 - bits)) === 0;
 }
 
-// Returns { nonce } if the challenge is valid (and burns it), otherwise an error message string.
 function verifyChallenge(ip, token, solution) {
   const BAD = 'Bad anti-bot token. Reload the page and try again.';
   if (typeof token !== 'string' || token.length > 400) return BAD;
@@ -248,29 +196,21 @@ function verifyChallenge(ip, token, solution) {
   return { nonce: p.n };
 }
 
-// Hourly rotating tag: lets us rate-limit by IP using only the issues, without keeping an
-// address anywhere. It cannot be turned back into the IP and changes every hour.
 function rateTag(ip, bucket) {
   return crypto.createHmac('sha256', SECRET).update('rl:' + ip + ':' + bucket).digest('hex').slice(0, 12);
 }
 
-// Browsers always send Origin on a POST. Only our own page (or ALLOWED_ORIGIN) may post.
 function originAllowed(req) {
   const origin = req.headers.origin;
   if (!origin) return false;
-  // 1. The page this server serves itself is always allowed.
   try {
     const host = new URL(origin).host;
     if (host === req.headers.host) return true;
-    // Behind a proxy (Codespaces, Render, Fly...) the public host arrives in X-Forwarded-Host.
     if (TRUST_PROXY && req.headers['x-forwarded-host'] &&
         String(req.headers['x-forwarded-host']).split(',')[0].trim() === host) return true;
   } catch (e) { return false; }
-  // 2. Any other page (e.g. the GitHub Pages site) must be listed in ALLOWED_ORIGIN.
   return ALLOWED_ORIGIN !== '*' && ALLOWED_LIST.indexOf(origin) !== -1;
 }
-
-// ---------- guestbook (GitHub issues) ----------
 
 function clean(s, max) {
   return String(s == null ? '' : s)
@@ -283,7 +223,6 @@ function clean(s, max) {
     .slice(0, max);
 }
 
-// Open issues only: close an issue on GitHub to hide an entry.
 const incidents = cache(30e3, async function () {
   const issues = await gh('GET', '/issues?labels=' + INCIDENT_LABEL + '&state=open&per_page=30');
   return issues
@@ -302,11 +241,10 @@ const incidents = cache(30e3, async function () {
     });
 });
 
-const ipPosts = new Map();       // ip -> [timestamps]
+const ipPosts = new Map();
 let globalPosts = [];
-const recentEntries = new Map(); // fingerprint -> timestamp
+const recentEntries = new Map();
 
-// Returns 0 if the post is allowed, otherwise seconds to wait.
 function postWait(ip) {
   const now = Date.now();
   globalPosts = globalPosts.filter(function (t) { return now - t < GLOBAL_WINDOW; });
@@ -349,7 +287,6 @@ async function createIncident(ip, input) {
     return { status: 429, retryAfter: wait, body: { error: 'One entry per person, mate. Try again in ' + Math.ceil(wait / 60) + ' min.' } };
   }
 
-  // The same limits again, read back from the issues, so they still hold after a restart.
   const recent = await gh('GET', '/issues?labels=' + INCIDENT_LABEL + '&state=all&per_page=30');
   const now = Date.now();
   const bucket = Math.floor(now / 3600e3);
@@ -390,15 +327,12 @@ async function createIncident(ip, input) {
   return { status: 201, body: { ok: true } };
 }
 
-// ---------- fund bar (GitHub Sponsors) ----------
-
 const SPONSORS_QUERY =
   'query($login:String!,$after:String){ user(login:$login){' +
   ' monthlyEstimatedSponsorsIncomeInCents' +
   ' lifetimeReceivedSponsorshipValues(first:100, after:$after){' +
   '  totalCount pageInfo{ hasNextPage endCursor } nodes{ amountInCents } } } }';
 
-// Everything ever received through GitHub Sponsors, in USD cents.
 async function fetchSponsorsUsd() {
   if (!SPONSORS_TOKEN) throw new Error('no token for Sponsors');
   let totalCents = 0, supporters = 0, monthlyCents = 0, after = null;
@@ -456,16 +390,13 @@ async function fundStatus() {
   return out;
 }
 
-// ---------- visitor counter (stored in an issue body) ----------
-
 let count = 0;
 let counterIssue = null;
 let dirty = false;
-const hitSeen = new Map(); // ip -> timestamp
+const hitSeen = new Map();
 
 let githubState = TOKEN ? 'unchecked' : 'no token';
 
-// Run once at startup so a bad PAT shows up in the log straight away, with the reason.
 async function checkToken() {
   if (!TOKEN) return;
   try {
@@ -534,8 +465,6 @@ function registerHit(ip) {
   return count;
 }
 
-// ---------- housekeeping ----------
-
 setInterval(saveCounter, 60e3).unref();
 
 setInterval(function () {
@@ -553,8 +482,6 @@ setInterval(function () {
   });
   recentEntries.forEach(function (t, k) { if (now - t > DUPLICATE_WINDOW) recentEntries.delete(k); });
 }, 5 * 60e3).unref();
-
-// ---------- http ----------
 
 const STATIC = {
   '/': ['index.html', 'text/html; charset=utf-8'],
@@ -672,7 +599,6 @@ const server = http.createServer(async function (req, res) {
     }
 
     if (url.pathname === '/api/hit' && req.method === 'GET') {
-      // The page sends ?peek=1 when the visitor already has the cookie, so it only reads the number.
       return send(res, 200, { value: url.searchParams.get('peek') ? count : registerHit(ip) });
     }
 

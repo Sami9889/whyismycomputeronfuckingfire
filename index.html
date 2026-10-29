@@ -238,8 +238,6 @@ Last updated: October 2026.<br>
 </center>
 
 <script type="text/javascript">
-// Where the guestbook backend (server.js on Render) lives. The page on the .com.au domain
-// is served by GitHub Pages, which has no /api, so the address is set here directly.
 var API = 'https://fire-guestbook.onrender.com';
 var REPO = 'Sami9889/whyismycomputeronfuckingfire';
 
@@ -270,7 +268,6 @@ function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Anti-bot sum: find a number that makes SHA-256(token:number) start with `bits` zero bits.
 function solveChallenge(token, bits, done) {
     var enc = new TextEncoder();
     var n = 0;
@@ -297,7 +294,6 @@ function solveChallenge(token, bits, done) {
 
 function getProof() {
     return new Promise(function(resolve, reject) {
-        // fail() shows a message from the server; noServer() means use the GitHub fallback.
         function fail(m) { var e = new Error(m); e.userMessage = m; reject(e); }
         function noServer(reason) { var e = new Error('no server'); e.reason = reason; reject(e); }
         if (!window.crypto || !crypto.subtle) { noServer('crypto'); return; }
@@ -366,7 +362,6 @@ function submitIncident() {
             msg.innerHTML = '<font color="#FF3300">' + esc(e.userMessage) + '</font>';
             return;
         }
-        // Server not reachable: let them sign through GitHub directly.
         var title = 'THERMAL INCIDENT: ' + name + ' (' + temp + ')';
         var body = '**Handle:** ' + name + '\n\n**Temperature:** ' + temp + '\n\n**Emergency Method:** ' + method;
         var url = 'https://github.com/' + REPO + '/issues/new?labels=thermal-incident&title=' +
@@ -400,7 +395,6 @@ function loadIncidents() {
     .catch(function() { loadIncidentsFromGitHub(feed); });
 }
 
-// Fallback when server.js is not running: read the public issues straight from GitHub.
 function loadIncidentsFromGitHub(feed) {
     fetch('https://api.github.com/repos/' + REPO + '/issues?labels=thermal-incident&state=open&per_page=30')
     .then(function(r) { return r.json(); })
@@ -447,8 +441,6 @@ function setCounter(n) {
     document.getElementById('counter-row').innerHTML = html;
 }
 
-// Visitor counter: a cookie remembers who has been counted, so reloads and return visits
-// only read the number. Only a brand-new visitor adds one.
 function wasCounted() {
     try { if (document.cookie.indexOf('fire_visitor=1') !== -1) return true; } catch (e) {}
     try { if (window.localStorage && localStorage.getItem('fire_visitor') == '1') return true; } catch (e) {}
@@ -473,10 +465,8 @@ function loadCounter() {
     .catch(function() {});
 }
 
-// summit.yaml is the settings file. If the page is hosted away from server.js (GitHub Pages),
-// it holds api_url, the address of the guestbook server.
 function readSettings(done) {
-    if (API) { done(); return; }   // address already set above, nothing to look up
+    if (API) { done(); return; }
     fetch('summit.yaml', { cache: 'no-store' })
     .then(function(r) { return r.ok ? r.text() : ''; })
     .then(function(text) {
@@ -487,7 +477,6 @@ function readSettings(done) {
             if (m) cfg[m[1]] = m[2].replace(/^["']|["']$/g, '');
         }
         var url = (cfg.api_url || '').replace(/\/+$/, '');
-        // Only accept a real web address, never a script or odd scheme.
         if (!API && /^(https:\/\/|http:\/\/localhost[:\/])[^\s"'<>]+$/.test(url)) API = url;
         done();
     })
