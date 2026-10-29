@@ -664,6 +664,14 @@ const server = http.createServer(async function (req, res) {
       });
     }
 
+    if (req.method === 'GET' && url.pathname.indexOf('/api/') !== 0) {
+      return fs.readFile(path.join(__dirname, 'index.html'), function (err, data) {
+        if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('Not found'); }
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+        res.end(data);
+      });
+    }
+
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('Not found');
   } catch (e) {
