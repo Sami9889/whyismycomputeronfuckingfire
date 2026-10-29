@@ -3,39 +3,6 @@
 // whyismycomputeronfuckingfire.com.au backend
 // Made by Sami9889 - https://sami-s.dev
 //
-// One file, no npm packages, Node 18+.  Run:  node server.js
-//
-// What it does
-//   - Serves index.html (and summit.yaml if you have one)
-//   - Guestbook: every submission is a GitHub issue labelled "thermal-incident".
-//     Close an issue on GitHub to take it off the wall.
-//   - Fund bar: reads the money raised from GitHub Sponsors, converts USD -> AUD
-//   - Visitor counter: stored in the body of one issue labelled "counter"
-//
-// Environment
-//   PAT              your GitHub Personal Access Token (store it as a secret named PAT).
-//                    Use a CLASSIC token with the scopes: public_repo (or repo, if the repo
-//                    is private) and read:user. That one token does the guestbook, the
-//                    counter and the Sponsors fund bar.
-//                    Read in this order: PAT, GITHUB_PAT, GITHUB_TOKEN. PAT wins on purpose:
-//                    Codespaces and Actions pre-set GITHUB_TOKEN to a limited token.
-//   SPONSORS_TOKEN   optional separate token for Sponsors data. Falls back to PAT.
-//   GITHUB_API_URL   default https://api.github.com (only change this for testing)
-//   GITHUB_REPO      default Sami9889/whyismycomputeronfuckingfire
-//   SPONSOR_LOGIN    GitHub account that receives sponsorships, default = repo owner
-//   PORT             default 3000
-//   ALLOWED_ORIGIN   default *   = only the page this server serves may post. If the page
-//                    lives elsewhere, set it to its URL, e.g. https://whyismycomputeronfuckingfire.com.au
-//   SECRET           any long random string; signs the anti-bot challenges (random per start if unset)
-//   POW_BITS         anti-bot difficulty, default 18 (each +1 doubles the work)
-//   TRUST_PROXY      set to 1 when behind a proxy/host that sets X-Forwarded-For
-//   USD_TO_AUD       fallback exchange rate if the live rate can't be fetched (default 1.5)
-//
-// Optional summit.yaml next to this file:
-//   fund_goal_aud: 500
-//   sponsor_url: https://github.com/sponsors/Sami9889
-//   raised_aud: 0          # only used if GitHub Sponsors can't be read
-
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
