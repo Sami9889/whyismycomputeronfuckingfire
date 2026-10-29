@@ -633,7 +633,12 @@ const server = http.createServer(async function (req, res) {
     }
 
     if (url.pathname === '/api/hit' && req.method === 'GET') {
-      return send(res, 200, { value: url.searchParams.get('peek') ? count : registerHit(ip) });
+      if (url.searchParams.get('peek')) {
+        return send(res, 200, { value: count });
+      }
+      registerHit(ip);
+      await saveCounter();
+      return send(res, 200, { value: count });
     }
 
     if (req.method === 'GET' && STATIC[url.pathname]) {
