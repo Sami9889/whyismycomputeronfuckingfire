@@ -349,7 +349,6 @@ async function fetchSponsorsUsd() {
 }
 
 const sponsors = cache(5 * 60e3, fetchSponsorsUsd);
-
 const usdToAud = cache(12 * 60 * 60e3, async function () {
   const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=AUD', { signal: AbortSignal.timeout(HTTP_TIMEOUT) });
   if (!res.ok) throw new Error('FX ' + res.status);
@@ -368,7 +367,9 @@ async function fundStatus() {
     raised_aud: 0,
     percent: 0,
     supporters: 0,
+    monthly_usd: 0,
     monthly_aud: 0,
+    last_updated: new Date().toISOString(),
     source: 'none',
     sponsor_url: cfg.sponsor_url || 'https://github.com/sponsors/' + SPONSOR_LOGIN
   };
@@ -378,6 +379,7 @@ async function fundStatus() {
     let fx = FALLBACK_FX;
     try { fx = await usdToAud.get(); } catch (e) { log('FX fallback:', e.message); }
     out.raised_aud = round2(s.usd * fx);
+    out.monthly_usd = s.monthlyUsd;
     out.monthly_aud = round2(s.monthlyUsd * fx);
     out.supporters = s.supporters;
     out.source = 'github-sponsors';
@@ -588,6 +590,12 @@ const server = http.createServer(async function (req, res) {
 
     if (url.pathname === '/api/fund' && req.method === 'GET') {
       return send(res, 200, await fundStatus(), { 'Cache-Control': 'public, max-age=60' });
+    }
+
+    if (url.pathname === '/api/fund/refresh' && req.method === 'GET') {
+      sponsors.bust();
+      usdToAud.bust();
+      return send(res, 200, await fundStatus(), { 'Cache-Control': 'no-store' });
     }
 
     if (url.pathname === '/api/hit' && req.method === 'GET') {

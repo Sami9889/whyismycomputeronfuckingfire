@@ -134,6 +134,8 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <br>
 <font class="small" color="#888888">Money goes to actual cooling hardware. Honest.</font>
 <br><font class="small" color="#00CC66" id="fund-supporters"></font>
+<br><font class="small" color="#999999">Last updated: <span id="fund-updated">--</span></font>
+<br><a href="javascript:void(0);" onclick="refreshFund()" class="small" color="#3399FF">[ Refresh fund data ]</a>
 </td></tr>
 </table>
 
@@ -429,8 +431,38 @@ function loadFund() {
         if (f.supporters) {
             document.getElementById('fund-supporters').innerHTML = esc(f.supporters) + (f.supporters == 1 ? ' supporter' : ' supporters') + ' so far. Legends.';
         }
+        if (f.last_updated) document.getElementById('fund-updated').innerHTML = new Date(f.last_updated).toLocaleString();
+        if (f.monthly_aud != null && f.monthly_aud > 0) {
+            document.getElementById('fund-supporters').innerHTML += ' | ~$' + esc(Math.round(f.monthly_aud)) + '/mo AUD';
+        }
     })
     .catch(function() {});
+}
+
+function refreshFund() {
+    var btn = document.querySelector('a[onclick="refreshFund()"]');
+    if (btn) btn.innerHTML = '[ Refreshing... ]';
+    fetch(API + '/api/fund/refresh')
+    .then(function(r) { return r.json(); })
+    .then(function(f) {
+        if (btn) btn.innerHTML = '[ Refresh fund data ]';
+        if (!f || f.goal_aud == null) return;
+        document.getElementById('fund-now').innerHTML = esc(Math.round(f.raised_aud));
+        document.getElementById('fund-target').innerHTML = esc(f.goal_aud);
+        var pct = Math.max(2, Math.min(100, f.percent || 0));
+        document.getElementById('fund-bar').setAttribute('width', pct + '%');
+        if (f.sponsor_url) document.getElementById('sponsor-link').href = f.sponsor_url;
+        if (f.supporters) {
+            document.getElementById('fund-supporters').innerHTML = esc(f.supporters) + (f.supporters == 1 ? ' supporter' : ' supporters') + ' so far. Legends.';
+        }
+        if (f.last_updated) document.getElementById('fund-updated').innerHTML = new Date(f.last_updated).toLocaleString();
+        if (f.monthly_aud != null && f.monthly_aud > 0) {
+            document.getElementById('fund-supporters').innerHTML += ' | ~$' + esc(Math.round(f.monthly_aud)) + '/mo AUD';
+        }
+    })
+    .catch(function() {
+        if (btn) btn.innerHTML = '[ Refresh fund data ]';
+    });
 }
 
 function setCounter(n) {
