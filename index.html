@@ -432,7 +432,12 @@ function loadFund() {
             document.getElementById('fund-supporters').innerHTML += ' | ~$' + esc(Math.round(f.monthly_aud)) + '/mo AUD';
         }
     })
-    .catch(function() {});
+    .catch(function() {
+        var now = document.getElementById('fund-now');
+        var target = document.getElementById('fund-target');
+        if (now) now.innerHTML = '--';
+        if (target) target.innerHTML = '--';
+    });
 }
 
 function refreshFund() {
@@ -490,7 +495,10 @@ function loadCounter() {
             if (!counted) markCounted();
         }
     })
-    .catch(function() {});
+    .catch(function() {
+        var row = document.getElementById('counter-row');
+        if (row) row.innerHTML = '<td colspan="6" class="small" color="#FFFF00">Server is waking up&hellip;</td>';
+    });
 }
 
 function readSettings(done) {

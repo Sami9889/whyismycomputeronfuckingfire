@@ -1,14 +1,10 @@
-# One-click deploy on Render (free): runs server.js, which serves the page AND the API
-# from the same address, so there is nothing to paste into index.html.
+# Render blueprint: web service + keep-alive cron
+# Web service runs server.js (serves page + API)
+# Cron service pings /api/health every 14 min to prevent Render free-tier sleep
 #
-# How: render.com > sign in with GitHub > New > Blueprint > pick this repo > Apply.
-# It will ask for PAT once. Paste your GitHub personal access token there.
-# (GitHub secrets can't be read by a host, so the token is entered on Render, where it
-#  is stored encrypted. It is never in the repo or the page.)
-#
-# Free plan note: the service sleeps after ~15 minutes without visitors and takes
-# around a minute to wake up on the next visit. The guestbook, counter and anti-spam
-# limits all live in GitHub issues, so nothing is lost when it sleeps.
+# Free plan note: Render web services still sleep after ~15 min without traffic.
+# The cron below pings the health endpoint to keep it warm, but it may still sleep
+# during long quiet periods. First visit after sleep takes ~1 min to wake up.
 services:
   - type: web
     name: fire-guestbook
@@ -24,6 +20,15 @@ services:
         generateValue: true
       - key: NODE_VERSION
         value: "20"
-      # Lets the GitHub Pages site (your custom domain) post to this server too.
       - key: ALLOWED_ORIGIN
         value: "https://whyismycomputeronfuckingfire.com.au,https://www.whyismycomputeronfuckingfire.com.au,https://sami9889.github.io"
+
+  - type: cron
+    name: fire-keepalive
+    schedule: "*/14 * * * *"
+    runtime: node
+    buildCommand: echo "nothing to build"
+    startCommand: node -e "const http=require('http');setInterval(()=>{http.get('https://fire-guestbook.onrender.com/api/health',()=>{})},0);process.stdin.resume();"
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
