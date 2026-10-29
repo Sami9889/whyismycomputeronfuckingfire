@@ -453,10 +453,32 @@ function loadCounter() {
     .catch(function() {});
 }
 
+// summit.yaml is the settings file. If the page is hosted away from server.js (GitHub Pages),
+// it holds api_url, the address of the guestbook server.
+function readSettings(done) {
+    fetch('summit.yaml', { cache: 'no-store' })
+    .then(function(r) { return r.ok ? r.text() : ''; })
+    .then(function(text) {
+        var cfg = {};
+        var lines = String(text).split(/\r?\n/);
+        for (var i = 0; i < lines.length; i++) {
+            var m = lines[i].match(/^\s*([A-Za-z0-9_]+)\s*:\s*(.*?)\s*$/);
+            if (m) cfg[m[1]] = m[2].replace(/^["']|["']$/g, '');
+        }
+        var url = (cfg.api_url || '').replace(/\/+$/, '');
+        // Only accept a real web address, never a script or odd scheme.
+        if (!API && /^(https:\/\/|http:\/\/localhost[:\/])[^\s"'<>]+$/.test(url)) API = url;
+        done();
+    })
+    .catch(function() { done(); });
+}
+
 window.onload = function() {
-    loadIncidents();
-    loadFund();
-    loadCounter();
+    readSettings(function() {
+        loadIncidents();
+        loadFund();
+        loadCounter();
+    });
 };
 </script>
 
