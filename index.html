@@ -99,7 +99,25 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
       | |  FIRE!  | |
       | |_________| |
       |_____________|
-       \___________/</pre></td></tr></table>
+        \___________/</pre></td></tr></table>
+</td></tr>
+</table>
+
+<br>
+
+<table width="90%" border="4" bordercolor="#00FF00" cellpadding="8" cellspacing="0" bgcolor="#000000">
+<tr><td align="center">
+<font color="#FFFF00" face="Comic Sans MS" size="4"><b>DIAL-UP MODEM CONNECTION STATUS</b></font>
+<br><br>
+<font color="#00FF00" face="Courier New" size="3">MODEM: <span id="modem-status" class="blink">CONNECTING...</span></font>
+<br>
+<font color="#00FF00" face="Courier New" size="3">BAUD RATE: 56.6 KBPS</font>
+<br>
+<font color="#00FF00" face="Courier New" size="3">CARRIER: <span id="modem-carrier" class="blink">DETECTED</span></font>
+<br>
+<font color="#00FF00" face="Courier New" size="3">HANDSHAKE: <span id="modem-handshake">NEGOTIATING...</span></font>
+<br><br>
+<font color="#FF00FF" face="Comic Sans MS" size="3">* screeeech * brrrrrr * click * you are online *</font>
 </td></tr>
 </table>
 
@@ -145,9 +163,6 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <hr width="90%" size="7" color="#666666" noshade>
 
 <h2><font color="#FFCC00">Cooling Fund</font></h2>
-<div class="construction">
-<div class="construction-inner"><font color="#FFFF00" face="Comic Sans MS" size="4">🚧 UNDER CONSTRUCTION 🚧 CHECK BACK SOON!!!</font></div>
-</div>
 <table width="92%" border="8" bordercolor="#FF00FF" cellpadding="12" cellspacing="0" bgcolor="#110011">
 <tr><td align="center">
 <font color="#FFFF00" face="Comic Sans MS" size="5"><blink>We are trying to raise $500 for a slab of VB and a tank of liquid nitrogen to put out the server before it goes through the floor.</blink></font>
@@ -545,11 +560,25 @@ function readSettings(done) {
     .catch(function() { done(); });
 }
 
+function modemLoop() {
+    var states = ['CONNECTING...', 'CONNECTED', 'RENEGOTIATING...', 'CONNECTED'];
+    var hs = ['NEGOTIATING...', 'HANDSHAKE COMPLETE', 'TRAINING...', 'ONLINE'];
+    var i = 0;
+    setInterval(function () {
+        var el = document.getElementById('modem-status');
+        var h = document.getElementById('modem-handshake');
+        if (el) el.innerHTML = states[i % states.length];
+        if (h) h.innerHTML = hs[i % hs.length];
+        i++;
+    }, 1500);
+}
+
 window.onload = function() {
     readSettings(function() {
         loadIncidents();
         loadFund();
         loadCounter();
+        modemLoop();
     });
 };
 </script>
