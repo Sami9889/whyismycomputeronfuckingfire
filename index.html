@@ -53,7 +53,7 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 
 <table width="720" border="0" cellpadding="0" cellspacing="0">
 <tr><td>
-<marquee behavior="scroll" scrollamount="6" bgcolor="#FF6600"><font color="#FFFF00" face="Comic Sans MS" size="4"><b>*** WELCOME TO whyismycomputeronfuckingfire.com.au *** SIGN THE GUESTBOOK *** NEW: THE DIAGNOSTIC THING ACTUALLY WORKS NOW *** SPONSOR THE COOLING FUND *** BEST VIEWED IN NETSCAPE NAVIGATOR 4.04 OR INTERNET EXPLORER 5.5 *** YOUR COMPUTER IS ON FIRE BUT WE ARE JUST VIBING ***</b></font></marquee>
+<marquee behavior="scroll" scrollamount="6" bgcolor="#FF6600"><font color="#FFFF00"><b>*** WELCOME TO whyismycomputeronfuckingfire.com.au *** SIGN THE GUESTBOOK *** NEW: THE DIAGNOSTIC THING ACTUALLY WORKS NOW *** SPONSOR THE COOLING FUND *** BEST VIEWED IN NETSCAPE NAVIGATOR 4.04 OR INTERNET EXPLORER 5.5 *** YOUR COMPUTER IS ON FIRE BUT WE ARE JUST VIBING ***</b></font></marquee>
 </td></tr>
 </table>
 
@@ -120,7 +120,7 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <div class="box">
 <div class="box-title">Why Your PC Is Cooked</div>
 <table width="100%" border="4" bordercolor="#00FF00" cellpadding="8" cellspacing="0" bgcolor="#000000">
-<tr bgcolor="#000080"><td><font color="#FFFF00" face="Comic Sans MS" size="4"><b>Aussie Summer Edition</b></font></td></tr>
+<tr bgcolor="#000080"><td><font color="#FFFF00"><b>Aussie Summer Edition</b></font></td></tr>
 <tr><td align="left">
 <ol>
 <li><b>It's 42 degrees in the western suburbs.</b> No aircon, and your room is hotter than the inside of the PC.</li>
@@ -138,14 +138,14 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 
 <div class="box">
 <div class="box-title">Cooling Fund</div>
-<font color="#FFFF00" face="Comic Sans MS" size="4"><b>We are trying to raise $500 for a slab of VB and a tank of liquid nitrogen to put out the server before it goes through the floor.</b></font>
+<font color="#FFFF00"><b>We are trying to raise $500 for a slab of VB and a tank of liquid nitrogen to put out the server before it goes through the floor.</b></font>
 <br><br>
 <font color="#00CCCC" face="Courier New" size="4"><b>Fund: $<span id="fund-now">0</span> / $<span id="fund-target">500</span> AUD</b></font>
 <table width="80%" border="5" bordercolor="#FFFFFF" cellpadding="0" cellspacing="0"><tr>
 <td bgcolor="#000000" height="22"><table width="2%" id="fund-bar" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#00FF00" height="18"></td></tr></table></td>
 </tr></table>
 <br>
-<a id="sponsor-link" href="https://github.com/sponsors/Sami9889" target="_blank"><font face="Comic Sans MS" size="4"><b>[ Sponsor this project ]</b></font></a>
+<a id="sponsor-link" href="https://github.com/sponsors/Sami9889" target="_blank"><font color="#FFFF00"><b>[ Sponsor this project ]</b></font></a>
 <br>
 <font class="small" color="#888888">Money goes to actual cooling hardware. Honest.</font>
 <br><font class="small" color="#00CC66" id="fund-supporters"></font>
@@ -269,7 +269,7 @@ function showResult(type) {
         out = '<font color="#33FF33" size="3"><b>Beer cooling advice</b></font><br>' +
               'No. Beer conducts electricity. Drink it yourself and blow on the graphics card.';
     }
-    res.innerHTML = '<table width="90%" border="6" bordercolor="#00FF00" cellpadding="12" cellspacing="0" bgcolor="#000000"><tr><td align="left"><font color="#00FF00" face="Comic Sans MS" size="4"><blink>' + out + '</blink></font></td></tr></table>';
+    res.innerHTML = '<table width="90%" border="6" bordercolor="#00FF00" cellpadding="12" cellspacing="0" bgcolor="#000000"><tr><td align="left"><font color="#00FF00"><blink>' + out + '</blink></font></td></tr></table>';
     res.style.display = 'block';
 }
 
@@ -346,7 +346,7 @@ function submitIncident() {
         msg.innerHTML = '<font color="#FF3300">Please fill in your name and what you tried.</font>';
         return false;
     }
-    msg.innerHTML = '<font color="#FFFF00" face="Comic Sans MS">Proving you are not a bot, hang on&hellip;</font>';
+    msg.innerHTML = '<font color="#FFFF00">Proving you are not a bot, hang on&hellip;</font>';
     getProof()
     .then(function(proof) {
         return fetch(API + '/api/incidents', {
@@ -358,7 +358,7 @@ function submitIncident() {
     .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
     .then(function(x) {
         if (x.ok) {
-            msg.innerHTML = '<font color="#33FF33" face="Comic Sans MS">Cheers ' + esc(name) + '! You are in the guestbook.</font>';
+            msg.innerHTML = '<font color="#33FF33">Cheers ' + esc(name) + '! You are in the guestbook.</font>';
             document.getElementById('inc-name').value = '';
             document.getElementById('inc-method').value = '';
             loadIncidents();
