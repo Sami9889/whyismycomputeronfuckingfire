@@ -202,7 +202,7 @@ function rateTag(ip, bucket) {
 
 function originAllowed(req) {
   const origin = req.headers.origin;
-  if (!origin) return false;
+  if (!origin) return true;
   try {
     const host = new URL(origin).host;
     if (host === req.headers.host) return true;
@@ -214,7 +214,7 @@ function originAllowed(req) {
 
 function apiOriginAllowed(req) {
   const origin = req.headers.origin;
-  if (!origin) return false;
+  if (!origin) return true;
   try {
     const host = new URL(origin).host;
     if (host === req.headers.host) return true;
