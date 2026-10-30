@@ -1,6 +1,6 @@
-# Security Policy
+# Security Policy (Vibes Edition)
 
-Thanks for looking after whyismycomputeronfuckingfire.com.au. It is a small hobby project made by [Sami9889](https://github.com/Sami9889) ([sami-s.dev](https://sami-s.dev)), but I take security reports seriously.
+Thanks for looking after whyismycomputeronfuckingfire.com.au. It is a small hobby project made by [Sami9889](https://github.com/Sami9889) ([sami-s.dev](https://sami-s.dev)), but I take security reports... somewhat seriously. It's fine.
 
 ## Reporting a vulnerability
 
@@ -10,7 +10,7 @@ Report privately in one of these ways:
 
 1. **GitHub private vulnerability reporting** (preferred): go to the *Security* tab of this repository and choose *Report a vulnerability*, or use
    <https://github.com/Sami9889/whyismycomputeronfuckingfire/security/advisories/new>.
-2. **Email me** at <hello@sami-s.dev>. Please put "Security" in the subject line. If you want to send sensitive details, ask first and I will arrange a private channel.
+2. **Email me** at <hello@sami-s.dev>. Please put "Security" in the subject line. If you want to send sensitive details, ask first and I will arrange a private channel. Or just vibe about it.
 
 Please include:
 
@@ -22,11 +22,11 @@ Please include:
 
 This is a one-person project, so these are goals, not guarantees:
 
-- I will try to acknowledge your report within **7 days**.
+- I will try to acknowledge your report within **7 days**. (Maybe. Probably.)
 - I will try to confirm and fix real issues within **30 days**, and tell you when it is fixed.
 - I am happy to credit you in the fix if you want that.
 
-There is no bug bounty.
+There is no bug bounty. But I might buy you a VB.
 
 ## Scope
 
@@ -46,7 +46,7 @@ Out of scope:
 
 ## Good-faith research
 
-If you act in good faith, avoid harming other people's data, do not access more than you need to prove the issue, and give me reasonable time to fix it before sharing details, I will not pursue action against you.
+If you act in good faith, avoid harming other people's data, do not access more than you need to prove the issue, and give me reasonable time to fix it before sharing details, I will not pursue action against you. Thanks, vibes.
 
 ## Supported versions
 
