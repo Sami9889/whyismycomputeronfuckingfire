@@ -1,11 +1,11 @@
 # Settings for whyismycomputeronfuckingfire.com.au
 # Read by index.html (the page) and by server.js. Keep values on one line, no comments after them.
 
-# Where the guestbook server lives. Paste your Render address here (shown at the top of
-# your service page on Render), for example: https://fire-guestbook.onrender.com
+# Where the guestbook server lives. Use the main domain, for example:
+# https://whyismycomputeronfuckingfire.com.au
 # Needed when the page is on GitHub Pages / your .com.au domain.
 # Leave it empty if people use the Render address directly.
-api_url: https://fire-guestbook.onrender.com
+api_url: https://whyismycomputeronfuckingfire.com.au
 
 # Liquid Nitrogen Fund
 fund_goal_aud: 500
