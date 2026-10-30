@@ -99,50 +99,7 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
       | |  FIRE!  | |
       | |_________| |
       |_____________|
-        \___________/</pre></td></tr></table>
-</td></tr>
-</table>
-
-<br>
-
-<table width="90%" border="6" bordercolor="#00FF00" cellpadding="12" cellspacing="0" bgcolor="#000000">
-<tr><td align="center">
-<font color="#FFFF00" face="Comic Sans MS" size="5"><blink>DIAL-UP MODEM CONNECTION STATUS</blink></font>
-<br><br>
-<table border="4" bordercolor="#333333" cellpadding="6" cellspacing="0" bgcolor="#111111">
-<tr><td align="center">
-<pre class="art" style="color:#00FF00;">
-       ___________
-      /           \
-     |  _________  |
-     | |         | |
-     | |  MODEM  | |
-     | |_________| |
-      \___________/
-       ||      ||
-       ||      ||
-     __||      ||__
-    /   \______/   \
-   /   /      \   \
-  |   |  DATA  |   |
-   \   \______/   /
-    \____________/
-</pre>
-</td></tr>
-</table>
-<br><br>
-<font color="#00FF00" face="Courier New" size="3">MODEM: <span id="modem-status" class="blink">CONNECTING...</span></font>
-<br>
-<font color="#00FF00" face="Courier New" size="3">BAUD RATE: 56.6 KBPS</font>
-<br>
-<font color="#00FF00" face="Courier New" size="3">CARRIER: <span id="modem-carrier" class="blink">DETECTED</span></font>
-<br>
-<font color="#00FF00" face="Courier New" size="3">HANDSHAKE: <span id="modem-handshake">NEGOTIATING...</span></font>
-<br><br>
-<font color="#FF00FF" face="Comic Sans MS" size="3"><blink>* screeeech * brrrrrr * click * you are online *</blink></font>
-<br><br>
-<input class="btn" type="button" value="DISCONNECT" onclick="toggleModem()">
-<input class="btn" type="button" value="RECONNECT" onclick="reconnectModem()">
+         \___________/</pre></td></tr></table>
 </td></tr>
 </table>
 
@@ -585,52 +542,11 @@ function readSettings(done) {
     .catch(function() { done(); });
 }
 
-function toggleModem() {
-    var btn = document.querySelector('input[value="DISCONNECT"]');
-    var status = document.getElementById('modem-status');
-    var carrier = document.getElementById('modem-carrier');
-    var handshake = document.getElementById('modem-handshake');
-    if (btn.value === 'DISCONNECT') {
-        btn.value = 'RECONNECT';
-        status.innerHTML = 'DISCONNECTED';
-        carrier.innerHTML = 'LOST';
-        handshake.innerHTML = 'TERMINATED';
-        status.className = '';
-        carrier.className = '';
-    } else {
-        btn.value = 'DISCONNECT';
-        status.innerHTML = 'CONNECTED';
-        carrier.innerHTML = 'DETECTED';
-        handshake.innerHTML = 'ONLINE';
-        status.className = 'blink';
-        carrier.className = 'blink';
-    }
-}
-
-function reconnectModem() {
-    toggleModem();
-    setTimeout(toggleModem, 2000);
-}
-
-function modemLoop() {
-    var states = ['CONNECTING...', 'CONNECTED', 'RENEGOTIATING...', 'CONNECTED'];
-    var hs = ['NEGOTIATING...', 'HANDSHAKE COMPLETE', 'TRAINING...', 'ONLINE'];
-    var i = 0;
-    setInterval(function () {
-        var el = document.getElementById('modem-status');
-        var h = document.getElementById('modem-handshake');
-        if (el) el.innerHTML = states[i % states.length];
-        if (h) h.innerHTML = hs[i % hs.length];
-        i++;
-    }, 1500);
-}
-
 window.onload = function() {
     readSettings(function() {
         loadIncidents();
         loadFund();
         loadCounter();
-        modemLoop();
     });
 };
 </script>
