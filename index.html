@@ -21,48 +21,74 @@ a:link { color: #00FF00; text-decoration: underline; }
 a:visited { color: #FF00FF; text-decoration: underline; }
 a:hover { color: #FFFF00; text-decoration: none; }
 td, th { font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 11px; }
-h1 { font-family: "Times New Roman", Times, serif; font-size: 42px; color: #FF0000; margin: 2px 0; }
-h2 { font-family: "Times New Roman", Times, serif; font-size: 24px; color: #FFCC00; margin: 4px 0; }
-.blink { text-decoration: blink; animation: blinker 0.4s step-start infinite; }
+h1 { font-family: "Comic Sans MS", "Times New Roman", Times, serif; font-size: 56px; color: #FF0000; margin: 2px 0; text-shadow: 3px 3px 0 #FFFF00; }
+h2 { font-family: "Times New Roman", Times, serif; font-size: 28px; color: #FFCC00; margin: 4px 0; text-shadow: 2px 2px 0 #FF0000; }
+.blink { text-decoration: blink; animation: blinker 0.3s step-start infinite; }
 @keyframes blinker { 50% { visibility: hidden; } }
 .small { font-size: 9px; }
 .tiny { font-size: 8px; }
 pre.art { font-family: "Courier New", Courier, monospace; font-size: 13px; line-height: 14px; color: #FF9900; margin: 0; padding: 0; text-align: left; white-space: pre; }
-.digit { background-color: #000000; color: #00FF00; font-family: "Courier New", Courier, monospace; font-size: 24px; font-weight: bold; padding: 2px 4px; border: 2px solid #008000; }
-input.btn { font-family: "Comic Sans MS", Verdana, Arial, sans-serif; font-size: 12px; width: 100%; margin: 2px 0; padding: 4px; cursor: pointer; color: #000000; background-color: #FFFF00; border: 2px outset #CCCCCC; }
-input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-size: 11px; background-color: #000000; color: #00FF00; border: 2px inset #008000; }
-#result { display: none; margin-top: 6px; }
+.digit { background-color: #000000; color: #00FF00; font-family: "Courier New", Courier, monospace; font-size: 28px; font-weight: bold; padding: 2px 5px; border: 3px solid #008000; }
+input.btn { font-family: "Comic Sans MS", Verdana, Arial, sans-serif; font-size: 14px; width: 100%; margin: 3px 0; padding: 5px; cursor: pointer; color: #000000; background-color: #FFFF00; border: 3px outset #CCCCCC; font-weight: bold; }
+input.btn:active { border-style: inset; }
+input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-size: 12px; background-color: #000000; color: #00FF00; border: 3px inset #008000; font-weight: bold; }
+#result { display: none; margin-top: 8px; }
 .comicsans { font-family: "Comic Sans MS", cursive; }
+.rainbow {
+    background: linear-gradient(to right, #FF0000, #FFFF00, #00FF00, #00FFFF, #0000FF, #FF00FF, #FF0000);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbow 4s linear infinite;
+}
+@keyframes rainbow { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
+.construction {
+    background: repeating-linear-gradient(45deg, #FFFF00 0 16px, #000000 16px 32px);
+    border: 4px ridge #FF00FF;
+    padding: 8px;
+    margin: 10px 0;
+}
+.construction-inner {
+    background: #000000;
+    color: #FFFF00;
+    font-family: "Comic Sans MS", cursive;
+    font-weight: bold;
+    padding: 12px;
+    text-align: center;
+}
+.beveled { border: 3px outset #CCCCCC; background-color: #FFCC00; padding: 6px; font-family: "Comic Sans MS", cursive; font-weight: bold; }
+.beveled:active { border-style: inset; }
 </style>
 </head>
 <body text="#CCCCCC" link="#00FF00" vlink="#FF00FF" alink="#FFFF00" bottommargin="0" topmargin="0" leftmargin="0" rightmargin="0" bgcolor="#000000">
 
 <center>
 
-<table width="700" border="0" cellpadding="0" cellspacing="0">
+<table width="760" border="0" cellpadding="0" cellspacing="0">
 <tr><td>
-<marquee behavior="scroll" scrollamount="8" bgcolor="#FF0000"><font color="#FFFF00" face="Comic Sans MS"><b>*** WELCOME TO whyismycomputeronfuckingfire.com.au *** SIGN THE GUESTBOOK *** NEW: THE DIAGNOSTIC THING ACTUALLY WORKS NOW *** SPONSOR THE COOLING FUND *** BEST VIEWED IN NETSCAPE NAVIGATOR 4.04 OR INTERNET EXPLORER 5.5 *** YOUR COMPUTER IS ON FIRE BUT WE ARE JUST VIBING ***</b></font></marquee>
+<marquee behavior="scroll" scrollamount="10" bgcolor="#FF0000"><font color="#FFFF00" face="Comic Sans MS" size="4"><b><blink>*** WELCOME TO whyismycomputeronfuckingfire.com.au ***</blink> SIGN THE GUESTBOOK *** NEW: THE DIAGNOSTIC THING ACTUALLY WORKS NOW *** SPONSOR THE COOLING FUND *** BEST VIEWED IN NETSCAPE NAVIGATOR 4.04 OR INTERNET EXPLORER 5.5 *** YOUR COMPUTER IS ON FIRE BUT WE ARE JUST VIBING ***</b></font></marquee>
 </td></tr>
 </table>
 
 <br>
 
-<table width="700" border="6" bordercolor="#FF00FF" cellpadding="14" cellspacing="0" bgcolor="#111111">
+<table width="760" border="8" bordercolor="#FF00FF" cellpadding="16" cellspacing="0" bgcolor="#111111">
 <tr><td align="center">
 
 
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
-<tr><td align="left">
-<font color="#FF0000" face="Times New Roman" size="7"><b>WHY IS MY COMPUTER<br>ON FUCKING FIRE?</b></font>
+<tr><td align="center">
+<font face="Comic Sans MS" size="7" class="rainbow"><b>WHY IS MY COMPUTER<br>ON FUCKING FIRE?</b></font>
 </td></tr>
-<tr><td>
+<tr><td align="center">
 <font color="#00CCCC"><i>The unofficial Australian PC cooling emergency page</i></font>
 </td></tr>
 </table>
 
 <br><br>
 
-<table width="100%" border="3" bordercolor="#FFFF00" cellpadding="8" cellspacing="0" bgcolor="#000000">
+<table width="100%" border="5" bordercolor="#FFFF00" cellpadding="10" cellspacing="0" bgcolor="#000000">
 <tr><td align="center">
 <table border="0" cellpadding="0" cellspacing="0" align="center"><tr><td align="left"><pre class="art">      (  )   (   )  )
     )  (  )  (  )  (
@@ -78,9 +104,9 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 </table>
 
 <br>
-<marquee behavior="scroll" scrollamount="4" bgcolor="#000080" width="90%"><font color="#FF00FF" face="Comic Sans MS"><blink>*** HOT *** HOT *** HOT *** YOUR PC IS COOKING *** HOT *** HOT ***</blink></font></marquee>
+<marquee behavior="scroll" scrollamount="6" bgcolor="#000080" width="95%"><font color="#FF00FF" face="Comic Sans MS" size="4"><blink>*** HOT *** HOT *** HOT *** YOUR PC IS COOKING *** HOT *** HOT ***</blink></font></marquee>
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <h2><font color="#FFCC00">What's Wrong With Your PC?</font></h2>
 <font color="#FFFFFF">What is your computer doing right now?</font>
@@ -89,11 +115,11 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <table width="90%" border="0" cellpadding="0" cellspacing="0">
 <tr><td>
 <input class="btn" type="button" value="1. There is smoke and flames coming out the back" onclick="showResult('smoke')">
-<br>
+<br><br>
 <input class="btn" type="button" value="2. No smoke, but it sounds like a 747 leaving Mascot" onclick="showResult('jet')">
-<br>
+<br><br>
 <input class="btn" type="button" value="3. My laptop is cooking my legs through my jeans" onclick="showResult('laptop')">
-<br>
+<br><br>
 <input class="btn" type="button" value="4. Can I pour a cold beer on the motherboard?" onclick="showResult('beer')">
 </td></tr>
 </table>
@@ -101,11 +127,11 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 <div id="result"></div>
 
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <h2><font color="#FFCC00">Why Your PC Is Cooked</font></h2>
-<table width="92%" border="4" bordercolor="#00FF00" cellpadding="8" cellspacing="0" bgcolor="#000000">
-<tr bgcolor="#000080"><td><font color="#FFFF00" face="Comic Sans MS" size="4"><b><blink>Aussie Summer Edition</blink></b></font></td></tr>
+<table width="92%" border="6" bordercolor="#00FF00" cellpadding="10" cellspacing="0" bgcolor="#000000">
+<tr bgcolor="#000080"><td><font color="#FFFF00" face="Comic Sans MS" size="5"><b><blink>Aussie Summer Edition</blink></b></font></td></tr>
 <tr><td align="left">
 <ol>
 <li><b>It's 42 degrees in the western suburbs.</b> No aircon, and your room is hotter than the inside of the PC.</li>
@@ -118,19 +144,22 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 </table>
 
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <h2><font color="#FFCC00">Cooling Fund</font></h2>
-<table width="92%" border="6" bordercolor="#FF00FF" cellpadding="10" cellspacing="0" bgcolor="#110011">
+<div class="construction">
+<div class="construction-inner"><font color="#FFFF00" face="Comic Sans MS" size="4">🚧 UNDER CONSTRUCTION 🚧 CHECK BACK SOON!!!</font></div>
+</div>
+<table width="92%" border="8" bordercolor="#FF00FF" cellpadding="12" cellspacing="0" bgcolor="#110011">
 <tr><td align="center">
-<font color="#FFFF00" face="Comic Sans MS" size="4"><blink>We are trying to raise $500 for a slab of VB and a tank of liquid nitrogen to put out the server before it goes through the floor.</blink></font>
+<font color="#FFFF00" face="Comic Sans MS" size="5"><blink>We are trying to raise $500 for a slab of VB and a tank of liquid nitrogen to put out the server before it goes through the floor.</blink></font>
 <br><br>
-<font color="#00CCCC" face="Courier New" size="4"><b>Fund: $<span id="fund-now">0</span> / $<span id="fund-target">500</span> AUD</b></font>
-<table width="80%" border="4" bordercolor="#FFFFFF" cellpadding="0" cellspacing="0"><tr>
-<td bgcolor="#000000" height="20"><table width="2%" id="fund-bar" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#00FF00" height="16"></td></tr></table></td>
+<font color="#00CCCC" face="Courier New" size="5"><b>Fund: $<span id="fund-now">0</span> / $<span id="fund-target">500</span> AUD</b></font>
+<table width="80%" border="6" bordercolor="#FFFFFF" cellpadding="0" cellspacing="0"><tr>
+<td bgcolor="#000000" height="24"><table width="2%" id="fund-bar" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#00FF00" height="20"></td></tr></table></td>
 </tr></table>
 <br>
-<a id="sponsor-link" href="https://github.com/sponsors/Sami9889" target="_blank"><font face="Comic Sans MS" size="4"><b>[ Sponsor this project ]</b></font></a>
+<a id="sponsor-link" href="https://github.com/sponsors/Sami9889" target="_blank"><font face="Comic Sans MS" size="5"><b>[ Sponsor this project ]</b></font></a>
 <br>
 <font class="small" color="#888888">Money goes to actual cooling hardware. Honest.</font>
 <br><font class="small" color="#00CC66" id="fund-supporters"></font>
@@ -140,20 +169,20 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 </table>
 
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <h2><font color="#FFCC00">Guestbook</font></h2>
 <font color="#00CCCC" class="small">Think your rig runs hotter than everyone else's? Tell us about it. Entries are stored as GitHub issues.</font>
 <br><br>
 
 <form onsubmit="try { submitIncident(); } catch (e) { document.getElementById('inc-success').innerHTML = '<font color=&quot;#FF3300&quot;>Something broke: ' + e.message + '</font>'; } return false;" action="javascript:void(0);" method="get">
-<table width="92%" border="0" cellpadding="3" cellspacing="0">
+<table width="92%" border="0" cellpadding="5" cellspacing="0">
 <tr>
-<td width="32%" align="right"><font color="#FFFFFF" face="Comic Sans MS">Your name:</font></td>
-<td><input class="txt" type="text" id="inc-name" size="26" maxlength="40"></td>
+<td width="32%" align="right"><font color="#FFFFFF" face="Comic Sans MS" size="4">Your name:</font></td>
+<td><input class="txt" type="text" id="inc-name" size="28" maxlength="40"></td>
 </tr>
 <tr>
-<td align="right"><font color="#FFFFFF" face="Comic Sans MS">Temperature:</font></td>
+<td align="right"><font color="#FFFFFF" face="Comic Sans MS" size="4">Temperature:</font></td>
 <td>
 <select class="txt" id="inc-temp">
 <option value="95C">95C (boiling kettle)</option>
@@ -164,35 +193,35 @@ input.txt, select.txt { font-family: "Courier New", Courier, monospace; font-siz
 </td>
 </tr>
 <tr>
-<td align="right"><font color="#FFFFFF" face="Comic Sans MS">What you tried:</font></td>
-<td><input class="txt" type="text" id="inc-method" size="26" maxlength="120"></td>
+<td align="right"><font color="#FFFFFF" face="Comic Sans MS" size="4">What you tried:</font></td>
+<td><input class="txt" type="text" id="inc-method" size="28" maxlength="120"></td>
 </tr>
 <tr>
 <td>&nbsp;</td>
-<td><input type="submit" value="Sign Guestbook"> <input type="reset" value="Clear"></td>
+<td><input type="submit" value="Sign Guestbook" class="beveled"> <input type="reset" value="Clear" class="beveled"></td>
 </tr>
 </table>
 </form>
 <div id="inc-success"></div>
 
 <br>
-<table width="92%" border="4" bordercolor="#666666" cellpadding="0" cellspacing="0">
-<tr bgcolor="#333333"><td><font color="#FFFF00" face="Comic Sans MS" size="3"><b>&nbsp;Latest entries</b></font></td></tr>
+<table width="92%" border="6" bordercolor="#666666" cellpadding="0" cellspacing="0">
+<tr bgcolor="#333333"><td><font color="#FFFF00" face="Comic Sans MS" size="4"><b>&nbsp;Latest entries</b></font></td></tr>
 <tr><td bgcolor="#000000">
-<div id="incident-feed" style="height:170px; overflow:auto; padding:4px; font-family:'Courier New',Courier,monospace; font-size:10px; color:#00FF00;"></div>
+<div id="incident-feed" style="height:190px; overflow:auto; padding:6px; font-family:'Courier New',Courier,monospace; font-size:12px; color:#00FF00;"></div>
 </td></tr>
 </table>
 
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <a name="contact"></a>
 <h2><font color="#FFCC00">Contact / Security</font></h2>
-<table width="92%" border="4" bordercolor="#666666" cellpadding="10" cellspacing="0" bgcolor="#000000">
+<table width="92%" border="6" bordercolor="#666666" cellpadding="12" cellspacing="0" bgcolor="#000000">
 <tr><td align="left">
-<b><font color="#FFFF00" face="Comic Sans MS">Webmaster:</font></b> Sami9889 &nbsp;-&nbsp; <a href="mailto:hello@sami-s.dev">hello@sami-s.dev</a> &nbsp;-&nbsp; <a href="https://sami-s.dev">sami-s.dev</a> &nbsp;-&nbsp; <a href="https://github.com/Sami9889">github.com/Sami9889</a>
+<b><font color="#FFFF00" face="Comic Sans MS" size="4">Webmaster:</font></b> Sami9889 &nbsp;-&nbsp; <a href="mailto:hello@sami-s.dev">hello@sami-s.dev</a> &nbsp;-&nbsp; <a href="https://sami-s.dev">sami-s.dev</a> &nbsp;-&nbsp; <a href="https://github.com/Sami9889">github.com/Sami9889</a>
 <br><br>
-<b><font color="#FFFF00" face="Comic Sans MS">Found a security problem?</font></b> Don't post it in the guestbook or open a public issue — those are public. Email <a href="mailto:hello@sami-s.dev">hello@sami-s.dev</a> with "Security" in the subject, or use <a href="https://github.com/Sami9889/whyismycomputeronfuckingfire/security/advisories/new">GitHub's private reporting</a>.
+<b><font color="#FFFF00" face="Comic Sans MS" size="4">Found a security problem?</font></b> Don't post it in the guestbook or open a public issue — those are public. Email <a href="mailto:hello@sami-s.dev">hello@sami-s.dev</a> with "Security" in the subject, or use <a href="https://github.com/Sami9889/whyismycomputeronfuckingfire/security/advisories/new">GitHub's private reporting</a>.
 <br><br>
 Full details are in the <a href="https://github.com/Sami9889/whyismycomputeronfuckingfire/blob/main/SECURITY.md">security policy</a> and <a href="/.well-known/security.txt">security.txt</a>.
 <br><br>
@@ -201,7 +230,7 @@ Full details are in the <a href="https://github.com/Sami9889/whyismycomputeronfu
 </table>
 
 <br>
-<hr width="90%" size="5" color="#666666" noshade>
+<hr width="90%" size="7" color="#666666" noshade>
 
 <font class="small" color="#999999">You are visitor number</font>
 <br>
@@ -216,16 +245,18 @@ Full details are in the <a href="https://github.com/Sami9889/whyismycomputeronfu
 [ <a href="https://github.com/Sami9889/whyismycomputeronfuckingfire">Source</a> ]
 [ <a href="#contact">Contact / Security</a> ]
 <br><br>
-<font face="Comic Sans MS"><blink>Best viewed in Internet Explorer 5.5 or Netscape Navigator 4.04 at 800x600, 16-bit colour.</blink></font><br>
+<font face="Comic Sans MS" size="4" color="#FFFF00"><blink>Best viewed in Internet Explorer 5.5 or Netscape Navigator 4.04 at 800x600, 16-bit colour.</blink></font><br>
 Made in Notepad by <a href="https://github.com/Sami9889">Sami9889</a> | <a href="https://sami-s.dev">sami-s.dev</a><br>
 Last updated: October 2026.<br>
 &copy; 2026 whyismycomputeronfuckingfire.com.au
 </font>
 
 <br><br>
-<marquee behavior="alternate" scrollamount="3" width="400"><font color="#FF00FF" class="small"><blink>*** UNDER CONSTRUCTION ***</blink></font></marquee>
+<marquee behavior="alternate" scrollamount="4" width="480"><font color="#FF00FF" class="small"><blink>*** UNDER CONSTRUCTION ***</blink></font></marquee>
 <br>
 <font class="tiny" color="#999999">Last modified: <script>document.write(document.lastModified);</script></font>
+<br>
+<font class="tiny" color="#00FF00"><blink>Hit reload to see the blink tag in action!!!</blink></font>
 
 </td></tr>
 </table>
@@ -255,7 +286,7 @@ function showResult(type) {
         out = '<font color="#33FF33" size="3"><b>Beer cooling advice</b></font><br>' +
               'No. Beer conducts electricity. Drink it yourself and blow on the graphics card.';
     }
-    res.innerHTML = '<table width="90%" border="5" bordercolor="#00FF00" cellpadding="12" cellspacing="0" bgcolor="#000000"><tr><td align="left"><font color="#00FF00" face="Comic Sans MS" size="4"><blink>' + out + '</blink></font></td></tr></table>';
+    res.innerHTML = '<table width="90%" border="7" bordercolor="#00FF00" cellpadding="14" cellspacing="0" bgcolor="#000000"><tr><td align="left"><font color="#00FF00" face="Comic Sans MS" size="5"><blink>' + out + '</blink></font></td></tr></table>';
     res.style.display = 'block';
 }
 
